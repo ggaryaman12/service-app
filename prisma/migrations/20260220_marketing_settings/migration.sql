@@ -1,0 +1,11 @@
+-- AlterTable
+ALTER TABLE `SiteSetting`
+  ADD COLUMN `heroEnabled` BOOLEAN NOT NULL DEFAULT true,
+  ADD COLUMN `heroMediaType` VARCHAR(191) NOT NULL DEFAULT 'VIDEO',
+  ADD COLUMN `heroMediaUrl` TEXT NULL,
+  ADD COLUMN `heroHeadline` TEXT NOT NULL,
+  ADD COLUMN `heroSubheadline` TEXT NOT NULL,
+  ADD COLUMN `heroCtaText` VARCHAR(191) NOT NULL DEFAULT 'Explore services',
+  ADD COLUMN `heroCtaHref` TEXT NULL,
+  ADD COLUMN `bannerAutoScrollMs` INTEGER NOT NULL DEFAULT 4500;
+

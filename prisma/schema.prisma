@@ -1,0 +1,170 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  WORKER
+  CUSTOMER
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  EN_ROUTE
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum MediaType {
+  BEFORE
+  AFTER
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  phone        String?
+  role         Role     @default(CUSTOMER)
+  region       String?
+  createdAt    DateTime @default(now())
+
+  workerProfile WorkerProfile?
+
+  customerBookings Booking[] @relation("CustomerBookings")
+  workerBookings   Booking[] @relation("WorkerBookings")
+  managerBookings  Booking[] @relation("ManagerBookings")
+
+  customerReviews Review[] @relation("CustomerReviews")
+  workerReviews   Review[] @relation("WorkerReviews")
+}
+
+model WorkerProfile {
+  userId          String  @id
+  user            User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skills          Json
+  rating          Float   @default(0)
+  totalJobs       Int     @default(0)
+  isOnline        Boolean @default(false)
+  currentLocation Json?
+}
+
+model Category {
+  id     String  @id @default(cuid())
+  name   String
+  slug   String  @unique
+  image  String?
+  active Boolean @default(true)
+
+  services Service[]
+}
+
+model Service {
+  id               String  @id @default(cuid())
+  categoryId       String
+  name             String
+  description      String  @db.Text
+  image            String? @db.Text
+  basePrice        Int
+  estimatedMinutes Int
+
+  category Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  bookings Booking[]
+
+  @@unique([categoryId, name])
+}
+
+model Booking {
+  id                String        @id @default(cuid())
+  customerId        String
+  workerId          String?
+  managerId         String?
+  serviceId         String
+  status            BookingStatus @default(PENDING)
+  scheduledDate     DateTime
+  scheduledTimeSlot String
+  address           String        @db.Text
+  totalAmount       Int
+  notes             String?       @db.Text
+
+  customer User    @relation("CustomerBookings", fields: [customerId], references: [id], onDelete: Restrict)
+  worker   User?   @relation("WorkerBookings", fields: [workerId], references: [id], onDelete: SetNull)
+  manager  User?   @relation("ManagerBookings", fields: [managerId], references: [id], onDelete: SetNull)
+  service  Service @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+
+  media  Media[]
+  review Review?
+
+  @@index([status])
+  @@index([scheduledDate])
+  @@index([customerId])
+  @@index([workerId])
+  @@index([managerId])
+}
+
+model Media {
+  id        String    @id @default(cuid())
+  bookingId String
+  type      MediaType
+  url       String    @db.Text
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId])
+}
+
+model Review {
+  id         String  @id @default(cuid())
+  bookingId  String  @unique
+  customerId String
+  workerId   String
+  rating     Int
+  comment    String? @db.Text
+
+  booking  Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  customer User    @relation("CustomerReviews", fields: [customerId], references: [id], onDelete: Restrict)
+  worker   User    @relation("WorkerReviews", fields: [workerId], references: [id], onDelete: Restrict)
+
+  @@index([workerId])
+  @@index([customerId])
+}
+
+model SiteSetting {
+  id                  String   @id @default(cuid())
+  announcementEnabled Boolean  @default(false)
+  announcementText    String   @db.Text
+  heroEnabled         Boolean  @default(true)
+  heroMediaType       String   @default("VIDEO")
+  heroMediaUrl        String?  @db.Text
+  heroHeadline        String   @db.Text
+  heroSubheadline     String   @db.Text
+  heroCtaText         String   @default("Explore services")
+  heroCtaHref         String?  @db.Text
+  bannerAutoScrollMs  Int      @default(4500)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model Banner {
+  id        String   @id @default(cuid())
+  title     String
+  subtitle  String?
+  tone      String   @default("blue")
+  imageUrl  String?  @db.Text
+  href      String?  @db.Text
+  active    Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([active, sortOrder])
+}
