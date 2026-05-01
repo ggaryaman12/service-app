@@ -2,19 +2,20 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { ReactNode } from "react";
 
 function NavIcon({
   active,
   children
 }: {
   active: boolean;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <span
       className={[
         "inline-flex h-6 w-6 items-center justify-center",
-        active ? "text-blue-600" : "text-slate-500"
+        active ? "text-brand-primary" : "text-text-muted"
       ].join(" ")}
     >
       {children}
@@ -25,21 +26,30 @@ function NavIcon({
 export function MobileNav() {
   const pathname = usePathname();
 
+  if (
+    pathname.startsWith("/service/") ||
+    pathname.startsWith("/book/") ||
+    pathname.startsWith("/checkout")
+  ) {
+    return null;
+  }
+
   const items = [
     { href: "/", label: "Home", key: "home" },
+    { href: "/services", label: "Services", key: "services" },
     { href: "/account", label: "Bookings", key: "bookings" },
-    { href: "/account", label: "Profile", key: "profile" }
+    { href: "/account", label: "Account", key: "account" }
   ] as const;
 
   return (
     <nav
       aria-label="Bottom navigation"
-      className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-2xl border-t border-slate-200 bg-white/90 backdrop-blur-md md:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-2xl border-t border-border-subtle bg-surface-elevated/90 backdrop-blur-md md:hidden"
       style={{
         paddingBottom: "env(safe-area-inset-bottom)"
       }}
     >
-      <div className="grid grid-cols-3 px-2 py-2">
+      <div className="grid grid-cols-4 px-2 py-2">
         {items.map((item) => {
           const active =
             item.href === "/"
@@ -49,13 +59,17 @@ export function MobileNav() {
             <Link
               key={item.key}
               href={item.href}
-              className="flex h-11 flex-col items-center justify-center gap-1 rounded-xl transition-transform active:scale-95"
+              className="flex h-11 flex-col items-center justify-center gap-1 rounded-ui-sm transition-colors hover:bg-surface-muted active:scale-95"
               aria-label={item.label}
             >
               <NavIcon active={active}>
                 {item.key === "home" ? (
                   <svg viewBox="0 0 24 24" className="h-6 w-6 fill-current">
                     <path d="M12 3l9 8h-3v10h-5v-6H11v6H6V11H3l9-8z" />
+                  </svg>
+                ) : item.key === "services" ? (
+                  <svg viewBox="0 0 24 24" className="h-6 w-6 fill-current">
+                    <path d="M4 5h16v4H4V5zm0 6h7v8H4v-8zm9 0h7v8h-7v-8z" />
                   </svg>
                 ) : item.key === "bookings" ? (
                   <svg viewBox="0 0 24 24" className="h-6 w-6 fill-current">
@@ -70,7 +84,7 @@ export function MobileNav() {
               <span
                 className={[
                   "text-[11px] font-medium",
-                  active ? "text-blue-600" : "text-slate-500"
+                  active ? "text-brand-primary" : "text-text-muted"
                 ].join(" ")}
               >
                 {item.label}

@@ -1,0 +1,111 @@
+- generic [ref=e2]:
+  - banner [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - link "JammuServe" [ref=e6] [cursor=pointer]:
+          - /url: /
+          - generic [ref=e8]: JammuServe
+        - button "Current location" [ref=e9]:
+          - generic [ref=e10]: Select location
+          - img [ref=e11]
+      - navigation [ref=e13]:
+        - link "Services" [ref=e15] [cursor=pointer]:
+          - /url: /services
+        - link "Login" [ref=e16] [cursor=pointer]:
+          - /url: /customer/login
+        - link "Register" [ref=e17] [cursor=pointer]:
+          - /url: /customer/register
+  - main [ref=e18]:
+    - generic [ref=e20]:
+      - status "Preparing JammuServe" [ref=e21]:
+        - generic [ref=e71]:
+          - generic [ref=e72]:
+            - paragraph [ref=e73]: JammuServe launch sequence
+            - heading "Mapping the right professional to your doorstep." [level=1] [ref=e74]
+            - paragraph [ref=e75]: We are aligning request details, local availability, and the service route before the home experience opens.
+            - generic [ref=e79]:
+              - generic [ref=e80]: Request
+              - generic [ref=e81]: Dispatch
+              - generic [ref=e82]: Arrival
+          - generic [ref=e88]:
+            - generic [ref=e90]: Reading your service intent
+            - generic [ref=e93]: Scanning nearby professionals
+            - generic [ref=e96]: Preparing the doorstep route
+      - generic [ref=e99]:
+        - generic [ref=e106]:
+          - paragraph [ref=e107]: JammuServe / service city live
+          - heading "Premium home services, on-demand" [level=1] [ref=e108]
+          - paragraph [ref=e109]: Verified professionals • Cash on delivery • Fast local support across Jammu
+          - generic [ref=e110]:
+            - link "Explore services" [ref=e111] [cursor=pointer]:
+              - /url: /services
+            - link "Browse services" [ref=e112] [cursor=pointer]:
+              - /url: /services
+          - paragraph [ref=e115]: Scroll for the service route
+        - generic:
+          - generic:
+            - generic:
+              - generic: home evaluated
+              - generic: Step 1
+            - generic:
+              - generic: professional matched
+              - generic: Step 2
+            - generic:
+              - generic: service underway
+              - generic: Step 3
+      - generic [ref=e118]:
+        - generic [ref=e119]:
+          - generic [ref=e120]:
+            - paragraph [ref=e121]: Doorstep operating system
+            - heading "The home gets ready before anyone rings the bell." [level=2] [ref=e122]
+          - paragraph [ref=e123]: "Every touchpoint is designed as a coordinated route: customer intent, local dispatch, professional context, and pay-after-service confirmation stay in one flow."
+        - generic [ref=e127]:
+          - generic [ref=e128]:
+            - paragraph [ref=e129]: "01"
+            - heading "Describe the job" [level=3] [ref=e130]
+            - paragraph [ref=e131]: Choose the exact service and add notes that help the professional arrive prepared.
+          - generic [ref=e132]:
+            - paragraph [ref=e133]: "02"
+            - heading "Dispatch matches locally" [level=3] [ref=e134]
+            - paragraph [ref=e135]: The booking is routed around your slot, region, and current staff availability.
+          - generic [ref=e136]:
+            - paragraph [ref=e137]: "03"
+            - heading "Track the visit" [level=3] [ref=e138]
+            - paragraph [ref=e139]: Status updates keep the customer, manager, and worker aligned until completion.
+      - generic [ref=e142]:
+        - generic [ref=e143]:
+          - generic [ref=e144]:
+            - paragraph [ref=e145]: Next step
+            - heading "Choose where your service day goes next." [level=2] [ref=e146]
+          - paragraph [ref=e147]: Jump straight to discovery, account tracking, or a saved profile. The home page stays focused on the journey; each action opens a dedicated screen.
+        - generic [ref=e148]:
+          - link "Book Explore services Browse the catalog and choose a service flow. View services" [ref=e149] [cursor=pointer]:
+            - /url: /services
+            - generic [ref=e150]:
+              - paragraph [ref=e151]: Book
+              - heading "Explore services" [level=3] [ref=e152]
+              - paragraph [ref=e153]: Browse the catalog and choose a service flow.
+            - generic [ref=e154]: View services
+          - link "Track Follow bookings Open active visits, status changes, and history. Open bookings" [ref=e155] [cursor=pointer]:
+            - /url: /account
+            - generic [ref=e156]:
+              - paragraph [ref=e157]: Track
+              - heading "Follow bookings" [level=3] [ref=e158]
+              - paragraph [ref=e159]: Open active visits, status changes, and history.
+            - generic [ref=e160]: Open bookings
+          - link "Start Create profile Save your details for faster checkout next time. Create account" [ref=e161] [cursor=pointer]:
+            - /url: /customer/register
+            - generic [ref=e162]:
+              - paragraph [ref=e163]: Start
+              - heading "Create profile" [level=3] [ref=e164]
+              - paragraph [ref=e165]: Save your details for faster checkout next time.
+            - generic [ref=e166]: Create account
+        - generic [ref=e167]:
+          - link "Customer login" [ref=e168] [cursor=pointer]:
+            - /url: /customer/login
+          - link "Staff login" [ref=e169] [cursor=pointer]:
+            - /url: /staff/login
+  - contentinfo [ref=e170]:
+    - generic [ref=e171]:
+      - paragraph [ref=e172]: © 2026 JammuServe
+      - paragraph [ref=e173]: Pay-after-service (COD) only.

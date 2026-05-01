@@ -57,62 +57,92 @@ export function CheckoutClient({
 
   if (!loggedIn) {
     return (
-      <div className="mx-auto w-full max-w-md space-y-4">
-        <h1 className="text-xl font-semibold tracking-tight text-slate-900">Checkout</h1>
-        <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-          <p className="text-sm text-slate-600">Please login to continue.</p>
-          <div className="mt-3 flex gap-2">
-            <Link
-              href={`/customer/login?next=${encodeURIComponent("/checkout")}`}
-              className="inline-flex h-11 flex-1 items-center justify-center rounded-full bg-blue-600 px-4 text-sm font-semibold text-white transition-transform active:scale-95"
-            >
-              Login
-            </Link>
-            <Link
-              href={`/customer/register?next=${encodeURIComponent("/checkout")}`}
-              className="inline-flex h-11 flex-1 items-center justify-center rounded-full bg-slate-100 px-4 text-sm font-semibold text-slate-700 transition-transform active:scale-95"
-            >
-              Register
-            </Link>
+      <div className="mx-auto w-full max-w-2xl">
+        <section className="overflow-hidden rounded-ui-lg bg-surface-elevated shadow-card ring-1 ring-border-subtle">
+          <div className="bg-brand-primary-muted px-5 py-4">
+            <p className="text-caption font-semibold text-brand-primary">Checkout</p>
+            <h1 className="mt-1 text-heading-3 text-text-primary">Save your booking before we dispatch</h1>
           </div>
-        </div>
+          <div className="space-y-4 p-5">
+            <p className="text-body-sm text-text-secondary">
+              Login to confirm your cart, choose a service window, and track professional assignment.
+            </p>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Link
+                href={`/customer/login?next=${encodeURIComponent("/checkout")}`}
+                className="inline-flex h-12 flex-1 items-center justify-center rounded-full bg-brand-primary px-4 text-sm font-semibold text-text-inverse shadow-button-primary transition hover:bg-brand-primary-hover active:scale-95"
+              >
+                Login
+              </Link>
+              <Link
+                href={`/customer/register?next=${encodeURIComponent("/checkout")}`}
+                className="inline-flex h-12 flex-1 items-center justify-center rounded-full border border-border-strong bg-surface-elevated px-4 text-sm font-semibold text-text-primary transition hover:bg-surface-muted active:scale-95"
+              >
+                Register
+              </Link>
+            </div>
+          </div>
+        </section>
       </div>
     );
   }
 
   if (count === 0) {
     return (
-      <div className="mx-auto w-full max-w-md space-y-4">
-        <h1 className="text-xl font-semibold tracking-tight text-slate-900">Checkout</h1>
-        <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-          <p className="text-sm text-slate-600">Your cart is empty.</p>
+      <div className="mx-auto w-full max-w-2xl">
+        <section className="rounded-ui-lg bg-surface-elevated p-5 shadow-card ring-1 ring-border-subtle">
+          <p className="text-caption font-semibold text-brand-primary">Checkout</p>
+          <h1 className="mt-1 text-heading-3 text-text-primary">Your cart is ready for services</h1>
+          <p className="mt-2 text-body-sm text-text-secondary">
+            Add a service to start a guided checkout with address, slot, and pay-after-service confirmation.
+          </p>
           <Link
             href="/services"
-            className="mt-3 inline-flex h-11 w-full items-center justify-center rounded-full bg-slate-900 px-4 text-sm font-semibold text-white transition-transform active:scale-95"
+            className="mt-4 inline-flex h-12 w-full items-center justify-center rounded-full bg-brand-primary px-4 text-sm font-semibold text-text-inverse shadow-button-primary transition hover:bg-brand-primary-hover active:scale-95"
           >
             Browse services
           </Link>
-        </div>
+        </section>
       </div>
     );
   }
 
   return (
-    <div className="grid gap-5 md:grid-cols-12">
-      <section className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 md:col-span-12">
-        <p className="text-xs font-semibold text-slate-500">Checkout</p>
-        <div className="mt-1 flex items-end justify-between">
-          <div>
-            <p className="text-sm font-semibold text-slate-900">{count} item{count === 1 ? "" : "s"}</p>
-            <p className="text-xs text-slate-500">Cash on delivery / Pay after service only</p>
+    <div className="grid gap-5 pb-24 md:grid-cols-12 md:pb-0">
+      <section className="overflow-hidden rounded-ui-lg bg-surface-elevated shadow-card ring-1 ring-border-subtle md:col-span-12">
+        <div className="bg-brand-primary-muted px-5 py-4">
+          <p className="text-caption font-semibold text-brand-primary">Cart checkout</p>
+          <div className="mt-1 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h1 className="text-heading-3 text-text-primary">
+                {count} item{count === 1 ? "" : "s"} ready to book
+              </h1>
+              <p className="mt-1 text-body-sm text-text-secondary">
+                Cash on delivery / Pay after service only
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => clearCart()}
+              className="inline-flex h-11 items-center justify-center rounded-full bg-surface-elevated px-4 text-sm font-semibold text-text-primary ring-1 ring-border-subtle transition hover:bg-surface-muted active:scale-95"
+            >
+              Clear cart
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => clearCart()}
-            className="inline-flex h-11 items-center rounded-full bg-slate-100 px-4 text-sm font-semibold text-slate-700 transition-transform active:scale-95"
-          >
-            Clear cart
-          </button>
+        </div>
+        <div className="grid gap-3 px-5 py-4 sm:grid-cols-3">
+          <div>
+            <p className="text-caption text-text-muted">Cart total</p>
+            <p className="mt-1 text-sm font-semibold text-text-primary">₹{total}</p>
+          </div>
+          <div>
+            <p className="text-caption text-text-muted">Booking type</p>
+            <p className="mt-1 text-sm font-semibold text-text-primary">Multi-service</p>
+          </div>
+          <div>
+            <p className="text-caption text-text-muted">Payment</p>
+            <p className="mt-1 text-sm font-semibold text-text-primary">After service</p>
+          </div>
         </div>
       </section>
 
@@ -125,30 +155,36 @@ export function CheckoutClient({
       >
         <input type="hidden" name="cartPayload" value={payload} />
 
-        <section className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 space-y-3">
+        <section className="space-y-4 rounded-ui-lg bg-surface-elevated p-5 shadow-card ring-1 ring-border-subtle">
           <div>
-            <p className="text-xs font-semibold text-slate-500">Step 1</p>
-            <h2 className="text-sm font-semibold text-slate-900">Location</h2>
+            <p className="text-caption font-semibold text-brand-primary">Step 1</p>
+            <h2 className="mt-1 text-lg font-semibold text-text-primary">Confirm your service address</h2>
+            <p className="mt-1 text-body-sm text-text-secondary">
+              One address is used for every service in this checkout.
+            </p>
           </div>
           <textarea
             name="address"
             required
             placeholder="House/Flat, street, landmark"
-            className="min-h-24 w-full rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-900 ring-1 ring-slate-200 outline-none focus:ring-slate-300"
+            className="min-h-28 w-full rounded-ui bg-surface-muted px-3 py-2 text-sm text-text-primary ring-1 ring-border-subtle outline-none transition focus:bg-surface-elevated focus:ring-border-strong"
           />
           <input
             name="region"
             placeholder="Zone/Region (optional)"
-            className="h-12 w-full rounded-xl bg-slate-50 px-3 text-sm text-slate-900 ring-1 ring-slate-200 outline-none focus:ring-slate-300"
+            className="h-12 w-full rounded-ui bg-surface-muted px-3 text-sm text-text-primary ring-1 ring-border-subtle outline-none transition focus:bg-surface-elevated focus:ring-border-strong"
           />
         </section>
 
-        <section className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 space-y-3">
+        <section className="space-y-4 rounded-ui-lg bg-surface-elevated p-5 shadow-card ring-1 ring-border-subtle">
           <div>
-            <p className="text-xs font-semibold text-slate-500">Step 2</p>
-            <h2 className="text-sm font-semibold text-slate-900">Slot selection</h2>
+            <p className="text-caption font-semibold text-brand-primary">Step 2</p>
+            <h2 className="mt-1 text-lg font-semibold text-text-primary">Schedule the visit</h2>
+            <p className="mt-1 text-body-sm text-text-secondary">
+              Dispatch will use this window for the full cart.
+            </p>
           </div>
-          <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+          <div className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1">
             {dateOptions.map((d) => (
               <label key={d.value} className="shrink-0">
                 <input
@@ -159,7 +195,7 @@ export function CheckoutClient({
                   className="peer sr-only"
                   required
                 />
-                <span className="inline-flex h-11 items-center rounded-full px-4 text-sm font-semibold ring-1 ring-slate-200 bg-white text-slate-700 peer-checked:bg-blue-600 peer-checked:text-white peer-checked:ring-blue-600 transition-transform active:scale-95">
+                <span className="inline-flex h-11 items-center rounded-full bg-surface-muted px-4 text-sm font-semibold text-text-secondary ring-1 ring-border-subtle transition peer-checked:bg-brand-primary peer-checked:text-text-inverse peer-checked:ring-brand-primary active:scale-95">
                   {d.label}
                 </span>
               </label>
@@ -175,7 +211,7 @@ export function CheckoutClient({
                   defaultChecked={idx === 0}
                   className="peer sr-only"
                 />
-                <span className="flex h-11 items-center justify-center rounded-xl bg-slate-50 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 peer-checked:bg-blue-600 peer-checked:text-white peer-checked:ring-blue-600 transition-transform active:scale-95">
+                <span className="flex h-11 items-center justify-center rounded-ui bg-surface-muted text-sm font-semibold text-text-secondary ring-1 ring-border-subtle transition peer-checked:bg-brand-primary peer-checked:text-text-inverse peer-checked:ring-brand-primary active:scale-95">
                   {slot}
                 </span>
               </label>
@@ -183,44 +219,60 @@ export function CheckoutClient({
           </div>
         </section>
 
-        <section className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 space-y-3">
+        <section className="space-y-4 rounded-ui-lg bg-surface-elevated p-5 shadow-card ring-1 ring-border-subtle">
           <div>
-            <p className="text-xs font-semibold text-slate-500">Step 3</p>
-            <h2 className="text-sm font-semibold text-slate-900">Confirm</h2>
+            <p className="text-caption font-semibold text-brand-primary">Step 3</p>
+            <h2 className="mt-1 text-lg font-semibold text-text-primary">Add notes and confirm</h2>
           </div>
           <textarea
             name="notes"
             placeholder="Notes (optional)"
-            className="min-h-20 w-full rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-900 ring-1 ring-slate-200 outline-none focus:ring-slate-300"
+            className="min-h-24 w-full rounded-ui bg-surface-muted px-3 py-2 text-sm text-text-primary ring-1 ring-border-subtle outline-none transition focus:bg-surface-elevated focus:ring-border-strong"
           />
-          <button className="w-full rounded-full bg-green-600 px-4 py-3 text-sm font-semibold text-white shadow-md transition-transform active:scale-95">
+          <button className="hidden w-full rounded-full bg-brand-primary px-4 py-3 text-sm font-semibold text-text-inverse shadow-button-primary transition hover:bg-brand-primary-hover active:scale-95 md:block">
             Place booking (COD)
           </button>
         </section>
+
+        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border-subtle bg-surface-elevated/95 p-4 shadow-card backdrop-blur md:hidden">
+          <button className="w-full rounded-full bg-brand-primary px-4 py-3 text-sm font-semibold text-text-inverse shadow-button-primary transition active:scale-95">
+            Place booking · ₹{total}
+          </button>
+        </div>
       </form>
 
       <aside className="md:col-span-5">
-        <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 md:sticky md:top-[76px] space-y-3">
-          <p className="text-sm font-semibold text-slate-900">Receipt</p>
-          <div className="rounded-xl bg-slate-50 p-3 ring-1 ring-slate-200">
+        <div className="space-y-4 rounded-ui-lg bg-surface-elevated p-5 shadow-card ring-1 ring-border-subtle md:sticky md:top-[76px]">
+          <div>
+            <p className="text-caption font-semibold text-brand-primary">Receipt</p>
+            <h2 className="mt-1 text-lg font-semibold text-text-primary">Cart summary</h2>
+          </div>
+          <div className="space-y-3">
+            <div className="rounded-ui bg-surface-muted p-4 ring-1 ring-border-subtle">
+              <p className="text-sm font-semibold text-text-primary">
+                {count} item{count === 1 ? "" : "s"}
+              </p>
+              <p className="mt-1 text-caption text-text-muted">
+                Booked as separate service jobs from one checkout.
+              </p>
+            </div>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-500">Subtotal</span>
-              <span className="font-semibold text-slate-900">₹{total}</span>
+              <span className="text-text-secondary">Subtotal</span>
+              <span className="font-semibold text-text-primary">₹{total}</span>
             </div>
-            <div className="mt-2 flex items-center justify-between text-sm">
-              <span className="text-slate-500">Taxes</span>
-              <span className="font-semibold text-slate-900">₹0</span>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-text-secondary">Taxes</span>
+              <span className="font-semibold text-text-primary">₹0</span>
             </div>
-            <div className="mt-3 h-px bg-slate-200" />
-            <div className="mt-3 flex items-center justify-between">
-              <span className="text-sm font-semibold text-slate-900">Total</span>
-              <span className="text-lg font-semibold text-slate-900">₹{total}</span>
+            <div className="h-px bg-border-subtle" />
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold text-text-primary">Total</span>
+              <span className="text-xl font-semibold text-text-primary">₹{total}</span>
             </div>
           </div>
-          <p className="text-xs text-slate-500">Payment: COD / pay after service only.</p>
+          <p className="text-caption text-text-muted">Payment: COD / pay after service only.</p>
         </div>
       </aside>
     </div>
   );
 }
-

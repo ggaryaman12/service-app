@@ -2,7 +2,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { TrustBadge } from "@/components/trust-badge";
 
 function statusSteps(status: string) {
   const steps = [
@@ -61,21 +60,33 @@ export default async function AccountPage({
 
   return (
     <div className="grid gap-6 md:grid-cols-12">
-      <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 md:col-span-4 md:sticky md:top-[76px] md:self-start">
-        <p className="text-xs font-semibold text-slate-500">Account</p>
-        <p className="mt-1 text-sm font-semibold text-slate-900">{user.name}</p>
-        <p className="text-xs text-slate-500">{user.email}</p>
-        <p className="mt-2 text-xs text-slate-500">
-          Region: <span className="text-slate-700">{user.region ?? "—"}</span> · Phone:{" "}
-          <span className="text-slate-700">{user.phone ?? "—"}</span>
-        </p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <TrustBadge tone="blue" label="COD only" />
-          <TrustBadge tone="green" label="Verified pros" />
+      <div className="overflow-hidden rounded-ui-lg bg-surface-elevated shadow-card ring-1 ring-border-subtle md:col-span-4 md:sticky md:top-[76px] md:self-start">
+        <div className="bg-brand-primary-muted px-5 py-4">
+          <p className="text-caption font-semibold text-brand-primary">Account</p>
+          <h1 className="mt-1 text-heading-3 text-text-primary">{user.name}</h1>
+          <p className="mt-1 text-body-sm text-text-secondary">{user.email}</p>
         </div>
-        <div className="mt-4">
+        <div className="space-y-4 p-5">
+          <div className="grid gap-3">
+            <div className="rounded-ui bg-surface-muted p-3">
+              <p className="text-caption text-text-muted">Region</p>
+              <p className="mt-1 text-sm font-semibold text-text-primary">{user.region ?? "Not added"}</p>
+            </div>
+            <div className="rounded-ui bg-surface-muted p-3">
+              <p className="text-caption text-text-muted">Phone</p>
+              <p className="mt-1 text-sm font-semibold text-text-primary">{user.phone ?? "Not added"}</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <span className="rounded-full bg-brand-secondary-muted px-3 py-1 text-caption font-semibold text-state-info">
+              COD only
+            </span>
+            <span className="rounded-full bg-brand-primary-muted px-3 py-1 text-caption font-semibold text-brand-primary">
+              Verified pros
+            </span>
+          </div>
           <Link
-            className="inline-flex h-11 w-full items-center justify-center rounded-full bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm transition-transform active:scale-95"
+            className="inline-flex h-12 w-full items-center justify-center rounded-full bg-brand-primary px-4 text-sm font-semibold text-text-inverse shadow-button-primary transition hover:bg-brand-primary-hover active:scale-95"
             href="/services"
           >
             Book a service
@@ -84,109 +95,119 @@ export default async function AccountPage({
       </div>
 
       <div className="md:col-span-8 space-y-3">
-        <div className="flex items-center justify-between">
-          <h1 className="text-lg font-semibold tracking-tight text-slate-900">My bookings</h1>
-          <span className="text-sm text-slate-500">{bookings.length} total</span>
+        <div className="flex items-end justify-between gap-3">
+          <div>
+            <p className="text-caption font-semibold text-brand-primary">Bookings</p>
+            <h2 className="mt-1 text-heading-3 text-text-primary">My service timeline</h2>
+          </div>
+          <span className="shrink-0 rounded-full bg-surface-muted px-3 py-1 text-caption font-semibold text-text-secondary">
+            {bookings.length} total
+          </span>
         </div>
 
-        <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
-        <div className="border-b border-slate-200 px-4 py-3">
-          <p className="text-sm font-semibold text-slate-900">Recent</p>
-          <p className="mt-1 text-xs text-slate-500">
-            Track status updates here. Dispatch assigns a professional.
-          </p>
-        </div>
-        <div className="divide-y divide-slate-200">
-          {bookings.map((b) => (
-            <div
-              key={b.id}
-              className={[
-                "p-4",
-                highlighted === b.id ? "bg-amber-50" : ""
-              ].join(" ")}
-            >
-              <div className="space-y-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-xs font-semibold text-slate-500">{b.service.category.name}</p>
-                    <p className="truncate text-sm font-semibold text-slate-900">{b.service.name}</p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      {b.scheduledDate.toISOString().slice(0, 10)} · {b.scheduledTimeSlot} · ₹
-                      {b.totalAmount} (COD)
-                    </p>
-                  </div>
-                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-                    {b.status}
-                  </span>
-                </div>
-
-                <div className="rounded-2xl bg-slate-50 p-3 ring-1 ring-slate-200">
-                  <p className="text-xs font-semibold text-slate-500">Status timeline</p>
-                  <div className="mt-3 space-y-2">
-                    {statusSteps(b.status).map((s) => (
-                      <div key={s.key} className="flex items-center gap-2">
-                        <span
-                          aria-hidden
-                          className={[
-                            "h-5 w-5 rounded-full ring-1 flex items-center justify-center",
-                            s.done ? "bg-green-600 ring-green-600" : "bg-white ring-slate-300"
-                          ].join(" ")}
-                        >
-                          {s.done ? (
-                            <svg viewBox="0 0 24 24" className="h-4 w-4 fill-white">
-                              <path d="M9 16.2l-3.5-3.5L4 14.2l5 5 12-12-1.4-1.4z" />
-                            </svg>
-                          ) : null}
-                        </span>
-                        <span className={["text-sm", s.done ? "text-slate-900" : "text-slate-500"].join(" ")}>
-                          {s.label}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="text-sm text-slate-700">
-                    Professional: <span className="font-semibold">{b.worker?.name ?? "Unassigned"}</span>
-                  </p>
-                  {b.worker?.phone ? (
-                    <div className="flex gap-2">
-                      <a
-                        className="inline-flex h-11 flex-1 items-center justify-center rounded-full bg-white px-4 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 transition-transform active:scale-95"
-                        href={`tel:${b.worker.phone}`}
-                      >
-                        Call
-                      </a>
-                      <a
-                        className="inline-flex h-11 flex-1 items-center justify-center rounded-full bg-green-600 px-4 text-sm font-semibold text-white shadow-sm transition-transform active:scale-95"
-                        href={`https://wa.me/${b.worker.phone.replace(/\\D/g, "")}`}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        WhatsApp
-                      </a>
+        <div className="overflow-hidden rounded-ui-lg bg-surface-elevated shadow-card ring-1 ring-border-subtle">
+          <div className="border-b border-border-subtle px-5 py-4">
+            <p className="text-sm font-semibold text-text-primary">Recent</p>
+            <p className="mt-1 text-body-sm text-text-secondary">
+              Track status updates here. Dispatch assigns a professional after confirmation.
+            </p>
+          </div>
+          <div className="divide-y divide-border-subtle">
+            {bookings.map((b) => (
+              <article
+                key={b.id}
+                className={[
+                  "p-5",
+                  highlighted === b.id ? "bg-brand-secondary-muted" : "bg-surface-elevated"
+                ].join(" ")}
+              >
+                <div className="space-y-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-caption font-semibold text-brand-primary">{b.service.category.name}</p>
+                      <p className="truncate text-base font-semibold text-text-primary">{b.service.name}</p>
+                      <p className="mt-1 text-caption text-text-muted">
+                        {b.scheduledDate.toISOString().slice(0, 10)} · {b.scheduledTimeSlot} · ₹
+                        {b.totalAmount} (COD)
+                      </p>
                     </div>
-                  ) : null}
-                </div>
+                    <span className="rounded-full bg-surface-muted px-3 py-1 text-caption font-semibold text-text-secondary ring-1 ring-border-subtle">
+                      {b.status}
+                    </span>
+                  </div>
 
-                <p className="text-[11px] text-slate-500">
-                  Booking ID: <span className="font-mono">{b.id}</span>
+                  <div className="rounded-ui bg-surface-muted p-4 ring-1 ring-border-subtle">
+                    <p className="text-caption font-semibold text-text-muted">Status timeline</p>
+                    <div className="mt-3 space-y-2">
+                      {statusSteps(b.status).map((s) => (
+                        <div key={s.key} className="flex items-center gap-2">
+                          <span
+                            aria-hidden
+                            className={[
+                              "flex h-5 w-5 items-center justify-center rounded-full ring-1",
+                              s.done ? "bg-state-success ring-state-success" : "bg-surface-elevated ring-border-strong"
+                            ].join(" ")}
+                          >
+                            {s.done ? (
+                              <svg viewBox="0 0 24 24" className="h-4 w-4 fill-text-inverse">
+                                <path d="M9 16.2l-3.5-3.5L4 14.2l5 5 12-12-1.4-1.4z" />
+                              </svg>
+                            ) : null}
+                          </span>
+                          <span className={["text-sm", s.done ? "text-text-primary" : "text-text-muted"].join(" ")}>
+                            {s.label}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="text-sm text-text-secondary">
+                      Professional: <span className="font-semibold">{b.worker?.name ?? "Unassigned"}</span>
+                    </p>
+                    {b.worker?.phone ? (
+                      <div className="flex gap-2">
+                        <a
+                          className="inline-flex h-11 flex-1 items-center justify-center rounded-full bg-surface-elevated px-4 text-sm font-semibold text-text-primary ring-1 ring-border-subtle transition hover:bg-surface-muted active:scale-95"
+                          href={`tel:${b.worker.phone}`}
+                        >
+                          Call
+                        </a>
+                        <a
+                          className="inline-flex h-11 flex-1 items-center justify-center rounded-full bg-brand-primary px-4 text-sm font-semibold text-text-inverse shadow-button-primary transition hover:bg-brand-primary-hover active:scale-95"
+                          href={`https://wa.me/${b.worker.phone.replace(/\\D/g, "")}`}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          WhatsApp
+                        </a>
+                      </div>
+                    ) : null}
+                  </div>
+
+                  <p className="text-caption-small text-text-muted">
+                    Booking ID: <span className="font-mono">{b.id}</span>
+                  </p>
+                </div>
+              </article>
+            ))}
+            {bookings.length === 0 ? (
+              <div className="p-5">
+                <p className="text-sm font-semibold text-text-primary">No bookings yet</p>
+                <p className="mt-1 text-body-sm text-text-secondary">
+                  Choose a service and your first booking will appear here with live status updates.
                 </p>
+                <Link
+                  className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-full bg-brand-primary px-4 text-sm font-semibold text-text-inverse shadow-button-primary transition hover:bg-brand-primary-hover active:scale-95 sm:w-auto"
+                  href="/services"
+                >
+                  Browse services
+                </Link>
               </div>
-            </div>
-          ))}
-          {bookings.length === 0 ? (
-            <div className="p-4 text-sm text-slate-600">
-              No bookings yet. Browse{" "}
-              <Link className="underline" href="/services">
-                services
-              </Link>
-              .
-            </div>
-          ) : null}
+            ) : null}
+          </div>
         </div>
-      </div>
       </div>
     </div>
   );

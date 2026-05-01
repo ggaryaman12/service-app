@@ -6,13 +6,13 @@ type TrustBadgeProps = {
 export function TrustBadge({ label, tone = "blue" }: TrustBadgeProps) {
   const styles =
     tone === "green"
-      ? "bg-green-50 text-green-700 ring-green-200"
-      : "bg-blue-50 text-blue-700 ring-blue-200";
+      ? "bg-brand-primary-muted text-brand-primary ring-brand-primary/15"
+      : "bg-brand-secondary-muted text-brand-secondary ring-brand-secondary/15";
 
   return (
     <span
       className={[
-        "inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ring-1",
+        "inline-flex items-center gap-1 rounded-full px-3 py-1 text-caption ring-1",
         styles
       ].join(" ")}
     >
@@ -31,4 +31,3 @@ export function TrustBadge({ label, tone = "blue" }: TrustBadgeProps) {
     </span>
   );
 }
-

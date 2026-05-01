@@ -8,4 +8,6 @@ dist
 .env.local
 .env.*.local
 prisma/dev.db
-
+*.tsbuildinfo
+output/playwright/
+.superpowers/

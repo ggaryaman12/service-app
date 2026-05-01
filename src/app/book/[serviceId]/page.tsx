@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { createBooking } from "@/app/book/actions";
-import { TrustBadge } from "@/components/trust-badge";
 
 const DEFAULT_SLOTS = [
   "09:00 - 11:00",
@@ -32,27 +31,45 @@ export default async function BookServicePage({
   if (!session?.user) {
     const next = `/book/${service.id}`;
     return (
-      <div className="mx-auto w-full max-w-md space-y-4">
-        <h1 className="text-xl font-semibold tracking-tight">Book service</h1>
-        <div className="rounded-lg border border-neutral-200 p-4">
-          <p className="text-xs text-neutral-500">{service.category.name}</p>
-          <p className="mt-1 text-sm font-semibold">{service.name}</p>
-          <p className="mt-2 text-sm text-neutral-600">Please login or register to continue.</p>
-          <div className="mt-3 flex gap-2">
-            <Link
-              className="rounded-md bg-neutral-900 px-3 py-2 text-sm text-white"
-              href={`/customer/login?next=${encodeURIComponent(next)}`}
-            >
-              Login
-            </Link>
-            <Link
-              className="rounded-md border border-neutral-200 px-3 py-2 text-sm"
-              href={`/customer/register?next=${encodeURIComponent(next)}`}
-            >
-              Register
-            </Link>
+      <div className="mx-auto w-full max-w-2xl">
+        <section className="overflow-hidden rounded-ui-lg bg-surface-elevated shadow-card ring-1 ring-border-subtle">
+          <div className="bg-brand-primary-muted px-5 py-4">
+            <p className="text-caption font-semibold text-brand-primary">Ready to book</p>
+            <h1 className="mt-1 text-heading-3 text-text-primary">{service.name}</h1>
+            <p className="mt-1 text-body-sm text-text-secondary">{service.category.name}</p>
           </div>
-        </div>
+          <div className="space-y-4 p-5">
+            <p className="text-body-sm text-text-secondary">
+              Sign in to choose your address, preferred slot, and confirm this service with pay after service.
+            </p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <div className="rounded-ui bg-surface-muted p-3">
+                <p className="text-caption text-text-muted">Estimated visit</p>
+                <p className="mt-1 text-sm font-semibold text-text-primary">
+                  {service.estimatedMinutes} mins
+                </p>
+              </div>
+              <div className="rounded-ui bg-surface-muted p-3">
+                <p className="text-caption text-text-muted">Amount due</p>
+                <p className="mt-1 text-sm font-semibold text-text-primary">₹{service.basePrice}</p>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Link
+                className="inline-flex h-12 flex-1 items-center justify-center rounded-full bg-brand-primary px-4 text-sm font-semibold text-text-inverse shadow-button-primary transition hover:bg-brand-primary-hover active:scale-95"
+                href={`/customer/login?next=${encodeURIComponent(next)}`}
+              >
+                Login
+              </Link>
+              <Link
+                className="inline-flex h-12 flex-1 items-center justify-center rounded-full border border-border-strong bg-surface-elevated px-4 text-sm font-semibold text-text-primary transition hover:bg-surface-muted active:scale-95"
+                href={`/customer/register?next=${encodeURIComponent(next)}`}
+              >
+                Register
+              </Link>
+            </div>
+          </div>
+        </section>
       </div>
     );
   }
@@ -76,21 +93,33 @@ export default async function BookServicePage({
   });
 
   return (
-    <div className="grid gap-5 md:grid-cols-12">
-      <section className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 md:col-span-12">
-        <p className="text-xs font-semibold text-slate-500">Checkout</p>
-        <div className="mt-1 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+    <div className="grid gap-5 pb-24 md:grid-cols-12 md:pb-0">
+      <section className="overflow-hidden rounded-ui-lg bg-surface-elevated shadow-card ring-1 ring-border-subtle md:col-span-12">
+        <div className="bg-brand-primary-muted px-5 py-4">
+          <p className="text-caption font-semibold text-brand-primary">Single service checkout</p>
           <div>
-            <h1 className="text-lg font-semibold tracking-tight text-slate-900 md:text-xl">
-              {service.category.name} · {service.name}
+            <h1 className="mt-1 text-heading-3 text-text-primary md:text-heading-2">
+              {service.name}
             </h1>
-            <p className="mt-1 text-sm text-slate-500">
-              Estimated time: {service.estimatedMinutes} mins
+            <p className="mt-2 text-body-sm text-text-secondary">
+              {service.category.name} service, confirmed with cash on delivery after the visit.
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <TrustBadge tone="blue" label="COD only" />
-            <TrustBadge tone="green" label="Verified professionals" />
+        </div>
+        <div className="grid gap-3 px-5 py-4 sm:grid-cols-3">
+          <div>
+            <p className="text-caption text-text-muted">Professional visit</p>
+            <p className="mt-1 text-sm font-semibold text-text-primary">Verified team</p>
+          </div>
+          <div>
+            <p className="text-caption text-text-muted">Estimated time</p>
+            <p className="mt-1 text-sm font-semibold text-text-primary">
+              {service.estimatedMinutes} mins
+            </p>
+          </div>
+          <div>
+            <p className="text-caption text-text-muted">Payment</p>
+            <p className="mt-1 text-sm font-semibold text-text-primary">Pay after service</p>
           </div>
         </div>
       </section>
@@ -98,13 +127,16 @@ export default async function BookServicePage({
       <form action={createBooking} className="space-y-5 md:col-span-7">
         <input type="hidden" name="serviceId" value={service.id} />
 
-        <section className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 space-y-3">
+        <section className="space-y-4 rounded-ui-lg bg-surface-elevated p-5 shadow-card ring-1 ring-border-subtle">
           <div>
-            <p className="text-xs font-semibold text-slate-500">Step 1</p>
-            <h2 className="text-sm font-semibold text-slate-900">Location</h2>
+            <p className="text-caption font-semibold text-brand-primary">Step 1</p>
+            <h2 className="mt-1 text-lg font-semibold text-text-primary">Where should we arrive?</h2>
+            <p className="mt-1 text-body-sm text-text-secondary">
+              Add a clear address so dispatch can assign the right professional.
+            </p>
           </div>
           <div className="space-y-1">
-            <label className="text-sm font-medium" htmlFor="address">
+            <label className="text-label text-text-primary" htmlFor="address">
               Address
             </label>
             <textarea
@@ -112,28 +144,31 @@ export default async function BookServicePage({
               name="address"
               required
               placeholder="House/Flat, street, landmark"
-              className="min-h-24 w-full rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-900 ring-1 ring-slate-200 outline-none focus:ring-slate-300"
+              className="min-h-28 w-full rounded-ui bg-surface-muted px-3 py-2 text-sm text-text-primary ring-1 ring-border-subtle outline-none transition focus:bg-surface-elevated focus:ring-border-strong"
             />
           </div>
           <div className="space-y-1">
-            <label className="text-sm font-medium" htmlFor="region">
+            <label className="text-label text-text-primary" htmlFor="region">
               Zone/Region
             </label>
             <input
               id="region"
               name="region"
               placeholder="e.g. Gandhi Nagar"
-              className="h-12 w-full rounded-xl bg-slate-50 px-3 text-sm text-slate-900 ring-1 ring-slate-200 outline-none focus:ring-slate-300"
+              className="h-12 w-full rounded-ui bg-surface-muted px-3 text-sm text-text-primary ring-1 ring-border-subtle outline-none transition focus:bg-surface-elevated focus:ring-border-strong"
             />
           </div>
         </section>
 
-        <section className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 space-y-3">
+        <section className="space-y-4 rounded-ui-lg bg-surface-elevated p-5 shadow-card ring-1 ring-border-subtle">
           <div>
-            <p className="text-xs font-semibold text-slate-500">Step 2</p>
-            <h2 className="text-sm font-semibold text-slate-900">Slot selection</h2>
+            <p className="text-caption font-semibold text-brand-primary">Step 2</p>
+            <h2 className="mt-1 text-lg font-semibold text-text-primary">Pick your service window</h2>
+            <p className="mt-1 text-body-sm text-text-secondary">
+              Choose the earliest slot that works for your home.
+            </p>
           </div>
-          <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+          <div className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1">
             {dateOptions.map((d) => (
               <label
                 key={d.value}
@@ -147,7 +182,7 @@ export default async function BookServicePage({
                   className="peer sr-only"
                   required
                 />
-                <span className="inline-flex h-11 items-center rounded-full px-4 text-sm font-semibold ring-1 ring-slate-200 bg-white text-slate-700 peer-checked:bg-blue-600 peer-checked:text-white peer-checked:ring-blue-600 transition-transform active:scale-95">
+                <span className="inline-flex h-11 items-center rounded-full bg-surface-muted px-4 text-sm font-semibold text-text-secondary ring-1 ring-border-subtle transition peer-checked:bg-brand-primary peer-checked:text-text-inverse peer-checked:ring-brand-primary active:scale-95">
                   {d.label}
                 </span>
               </label>
@@ -164,7 +199,7 @@ export default async function BookServicePage({
                   defaultChecked={idx === 0}
                   className="peer sr-only"
                 />
-                <span className="flex h-11 items-center justify-center rounded-xl bg-slate-50 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 peer-checked:bg-blue-600 peer-checked:text-white peer-checked:ring-blue-600 transition-transform active:scale-95">
+                <span className="flex h-11 items-center justify-center rounded-ui bg-surface-muted text-sm font-semibold text-text-secondary ring-1 ring-border-subtle transition peer-checked:bg-brand-primary peer-checked:text-text-inverse peer-checked:ring-brand-primary active:scale-95">
                   {slot}
                 </span>
               </label>
@@ -172,56 +207,69 @@ export default async function BookServicePage({
           </div>
         </section>
 
-        <section className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 space-y-3">
+        <section className="space-y-4 rounded-ui-lg bg-surface-elevated p-5 shadow-card ring-1 ring-border-subtle">
           <div>
-            <p className="text-xs font-semibold text-slate-500">Step 3</p>
-            <h2 className="text-sm font-semibold text-slate-900">Payment</h2>
+            <p className="text-caption font-semibold text-brand-primary">Step 3</p>
+            <h2 className="mt-1 text-lg font-semibold text-text-primary">Confirm and pay later</h2>
           </div>
-          <div className="rounded-xl bg-slate-50 p-3 ring-1 ring-slate-200">
-            <p className="text-sm font-semibold text-slate-900">Cash on Delivery / Pay After Service</p>
-            <p className="mt-1 text-sm text-slate-500">No online payments. Pay after the job is done.</p>
+          <div className="rounded-ui bg-brand-secondary-muted p-4 ring-1 ring-border-subtle">
+            <p className="text-sm font-semibold text-text-primary">Cash on Delivery / Pay After Service</p>
+            <p className="mt-1 text-body-sm text-text-secondary">No online payment is collected here.</p>
           </div>
 
           <div className="space-y-1">
-            <label className="text-sm font-medium" htmlFor="notes">
+            <label className="text-label text-text-primary" htmlFor="notes">
               Notes (optional)
             </label>
             <textarea
               id="notes"
               name="notes"
               placeholder="Anything the technician should know"
-              className="min-h-20 w-full rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-900 ring-1 ring-slate-200 outline-none focus:ring-slate-300"
+              className="min-h-24 w-full rounded-ui bg-surface-muted px-3 py-2 text-sm text-text-primary ring-1 ring-border-subtle outline-none transition focus:bg-surface-elevated focus:ring-border-strong"
             />
           </div>
-          <button className="w-full rounded-full bg-green-600 px-4 py-3 text-sm font-semibold text-white shadow-md transition-transform active:scale-95">
+          <button className="hidden w-full rounded-full bg-brand-primary px-4 py-3 text-sm font-semibold text-text-inverse shadow-button-primary transition hover:bg-brand-primary-hover active:scale-95 md:block">
             Place booking (COD)
           </button>
         </section>
+
+        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border-subtle bg-surface-elevated/95 p-4 shadow-card backdrop-blur md:hidden">
+          <button className="w-full rounded-full bg-brand-primary px-4 py-3 text-sm font-semibold text-text-inverse shadow-button-primary transition active:scale-95">
+            Place booking · ₹{service.basePrice}
+          </button>
+        </div>
       </form>
 
       <aside className="md:col-span-5">
-        <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 md:sticky md:top-[76px] space-y-3">
-          <p className="text-sm font-semibold text-slate-900">Receipt</p>
-          <div className="rounded-xl bg-slate-50 p-3 ring-1 ring-slate-200">
+        <div className="space-y-4 rounded-ui-lg bg-surface-elevated p-5 shadow-card ring-1 ring-border-subtle md:sticky md:top-[76px]">
+          <div>
+            <p className="text-caption font-semibold text-brand-primary">Receipt</p>
+            <h2 className="mt-1 text-lg font-semibold text-text-primary">Service summary</h2>
+          </div>
+          <div className="rounded-ui bg-surface-muted p-4 ring-1 ring-border-subtle">
+            <p className="text-sm font-semibold text-text-primary">{service.name}</p>
+            <p className="mt-1 text-caption text-text-muted">{service.category.name}</p>
+          </div>
+          <div className="space-y-3">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-500">Subtotal</span>
-              <span className="font-semibold text-slate-900">₹{service.basePrice}</span>
+              <span className="text-text-secondary">Subtotal</span>
+              <span className="font-semibold text-text-primary">₹{service.basePrice}</span>
             </div>
-            <div className="mt-2 flex items-center justify-between text-sm">
-              <span className="text-slate-500">Visiting charge</span>
-              <span className="font-semibold text-slate-900">₹0</span>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-text-secondary">Visiting charge</span>
+              <span className="font-semibold text-text-primary">₹0</span>
             </div>
-            <div className="mt-2 flex items-center justify-between text-sm">
-              <span className="text-slate-500">Taxes</span>
-              <span className="font-semibold text-slate-900">₹0</span>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-text-secondary">Taxes</span>
+              <span className="font-semibold text-text-primary">₹0</span>
             </div>
-            <div className="mt-3 h-px bg-slate-200" />
-            <div className="mt-3 flex items-center justify-between">
-              <span className="text-sm font-semibold text-slate-900">Total</span>
-              <span className="text-lg font-semibold text-slate-900">₹{service.basePrice}</span>
+            <div className="h-px bg-border-subtle" />
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold text-text-primary">Total</span>
+              <span className="text-xl font-semibold text-text-primary">₹{service.basePrice}</span>
             </div>
           </div>
-          <p className="text-xs text-slate-500">
+          <p className="text-caption text-text-muted">
             Payment method: COD / pay after service only.
           </p>
         </div>

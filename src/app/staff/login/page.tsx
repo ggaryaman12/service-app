@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AuthError } from "next-auth";
 import { redirect } from "next/navigation";
 import { signIn } from "@/auth";
 
@@ -19,8 +20,11 @@ export default async function StaffLoginPage({
     const redirectTo = String(formData.get("redirectTo") ?? "/admin");
     try {
       await signIn("credentials", { email, password, loginAs: "staff", redirectTo });
-    } catch {
-      redirect(`/staff/login?next=${encodeURIComponent(redirectTo)}&error=1`);
+    } catch (error) {
+      if (error instanceof AuthError) {
+        redirect(`/staff/login?next=${encodeURIComponent(redirectTo)}&error=1`);
+      }
+      throw error;
     }
   }
 
