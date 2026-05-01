@@ -8,12 +8,15 @@ This file provides guidance to Codex (Codex.ai/code) when working with code in t
 npm run dev          # start dev server
 npm run build        # production build
 npm run lint         # ESLint
+npm run test:e2e           # Playwright E2E tests
+npm run test:e2e:headed   # Playwright E2E tests with visible browser
+npm run test:e2e:report   # open latest Playwright HTML report
 npm run prisma:generate   # regenerate Prisma client after schema changes
 npm run prisma:migrate    # run migrations (dev)
 npm run prisma:studio     # open Prisma Studio GUI
 ```
 
-No test suite is configured.
+Playwright E2E tests are configured under `tests/e2e`. No separate unit test suite is configured.
 
 ## Architecture
 
@@ -37,11 +40,11 @@ Key models: `User` (with `WorkerProfile` 1:1 for workers) → `Booking` (links c
 
 `BookingStatus` state machine: `PENDING → CONFIRMED → EN_ROUTE → IN_PROGRESS → COMPLETED` (or `CANCELLED`).
 
-Prices stored as integers (paise/cents, not floats).
+Prices are stored as integer INR rupee amounts, not floats.
 
 ### Mutations
 
-All mutations use Next.js Server Actions (`"use server"`). Each section has its own `actions.ts`:
+UI form mutations use Next.js Server Actions (`"use server"`). Each section has its own `actions.ts` and now delegates business logic to feature services:
 - `src/app/admin/actions.ts` — categories, services, staff user CRUD
 - `src/app/admin/marketing/server-actions.ts` — SiteSetting + Banner
 - `src/app/book/actions.ts` — single-service booking
@@ -49,7 +52,7 @@ All mutations use Next.js Server Actions (`"use server"`). Each section has its 
 - `src/app/manager/actions.ts` — booking status + dispatch
 - `src/app/worker/actions.ts` — duty toggle + job state transitions
 
-Every admin/staff action calls a `requireAdmin()` / `requireManager()` guard at the top that reads the session server-side.
+REST mutations live under `/api/app/*` for first-party Auth.js session clients and `/api/open/*` for integration channels. Admin/staff actions and app APIs call the matching `requireAdmin()` / `requireManager()` / `requireWorker()` / `requireCustomer()` guard server-side. Open write/status APIs authenticate DB-backed integration-channel keys.
 
 ### Cart
 

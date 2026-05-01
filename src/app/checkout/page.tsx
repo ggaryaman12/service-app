@@ -1,14 +1,12 @@
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
 import { CheckoutClient } from "@/app/checkout/checkout-client";
+import { getCatalogSnapshot } from "@/features/catalog/catalog.service";
 
 export default async function CheckoutPage() {
   const session = await auth();
   const loggedIn = Boolean(session?.user && session.user.role === "CUSTOMER");
 
-  const services = await prisma.service.findMany({
-    select: { id: true, basePrice: true }
-  });
+  const { services } = await getCatalogSnapshot();
   const prices = Object.fromEntries(services.map((s) => [s.id, s.basePrice])) as Record<
     string,
     number
@@ -16,4 +14,3 @@ export default async function CheckoutPage() {
 
   return <CheckoutClient loggedIn={loggedIn} prices={prices} />;
 }
-

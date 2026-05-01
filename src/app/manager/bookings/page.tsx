@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
+import { getManagerBookings } from "@/features/bookings/booking.service";
 import { updateBookingStatus } from "@/app/manager/actions";
 import { BookingStatus } from "@prisma/client";
 
@@ -19,12 +19,7 @@ export default async function ManagerBookingsPage({
 }) {
   const { region } = (await searchParams) ?? {};
 
-  const bookings = await prisma.booking.findMany({
-    where: region ? { customer: { region } } : undefined,
-    include: { customer: true, worker: true, service: { include: { category: true } } },
-    orderBy: [{ scheduledDate: "desc" }],
-    take: 50
-  });
+  const bookings = await getManagerBookings(region);
 
   return (
     <div className="space-y-4">

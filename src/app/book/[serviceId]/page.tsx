@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
 import { createBooking } from "@/app/book/actions";
+import { getCatalogServiceDetail } from "@/features/catalog/catalog.service";
 
 const DEFAULT_SLOTS = [
   "09:00 - 11:00",
@@ -21,10 +21,7 @@ export default async function BookServicePage({
   const session = await auth();
   const { serviceId } = await params;
 
-  const service = await prisma.service.findUnique({
-    where: { id: serviceId },
-    include: { category: true }
-  });
+  const service = await getCatalogServiceDetail(serviceId);
   if (!service) redirect("/services");
   if (session?.user && session.user.role !== "CUSTOMER") redirect("/");
 

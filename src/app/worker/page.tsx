@@ -2,6 +2,7 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { toggleDuty } from "@/app/worker/actions";
+import { getWorkerJobs } from "@/features/bookings/booking.service";
 
 export default async function WorkerDashboardPage() {
   const session = await auth();
@@ -18,20 +19,7 @@ export default async function WorkerDashboardPage() {
   });
   if (!me) return null;
 
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
-  const tomorrowStart = new Date(todayStart);
-  tomorrowStart.setDate(tomorrowStart.getDate() + 1);
-
-  const jobs = await prisma.booking.findMany({
-    where: {
-      workerId: me.id,
-      scheduledDate: { gte: todayStart, lt: tomorrowStart },
-      status: { in: ["CONFIRMED", "EN_ROUTE", "IN_PROGRESS"] }
-    },
-    include: { customer: true, service: { include: { category: true } } },
-    orderBy: [{ scheduledDate: "asc" }]
-  });
+  const jobs = await getWorkerJobs(me.id);
 
   return (
     <div className="space-y-5">
@@ -88,4 +76,3 @@ export default async function WorkerDashboardPage() {
     </div>
   );
 }
-

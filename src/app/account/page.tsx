@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { getCustomerAccountByEmail } from "@/features/account/account.service";
 
 function statusSteps(status: string) {
   const steps = [
@@ -43,18 +43,7 @@ export default async function AccountPage({
 
   const sp = (await searchParams) ?? {};
 
-  const user = await prisma.user.findUnique({
-    where: { email: session.user.email },
-    select: { id: true, name: true, email: true, role: true, region: true, phone: true }
-  });
-  if (!user) redirect("/customer/login?next=/account");
-
-  const bookings = await prisma.booking.findMany({
-    where: { customerId: user.id },
-    include: { service: { include: { category: true } }, worker: true },
-    orderBy: [{ scheduledDate: "desc" }],
-    take: 50
-  });
+  const { user, bookings } = await getCustomerAccountByEmail(session.user.email);
 
   const highlighted = sp.new ?? null;
 

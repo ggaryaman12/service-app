@@ -1,0 +1,562 @@
+openapi: 3.1.0
+info:
+  title: JammuServe API
+  version: 1.0.0
+  description: >
+    API contract for `/api/open/*` third-party integration routes and
+    `/api/app/*` first-party JammuServe client routes. Open integration routes
+    use `x-api-key` when they mutate or read channel-owned bookings;
+    first-party app routes use the Auth.js session cookie.
+servers:
+  - url: http://localhost:3000
+security: []
+tags:
+  - name: Open Integration API
+    description: Public catalog plus authorized booking/status endpoints for third-party channels.
+  - name: First-party App API
+    description: Session-authenticated endpoints for JammuServe-owned web/mobile clients.
+components:
+  securitySchemes:
+    AppSession:
+      type: apiKey
+      in: cookie
+      name: authjs.session-token
+    ChannelApiKey:
+      type: apiKey
+      in: header
+      name: x-api-key
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+    OpenBookingRequest:
+      type: object
+      required: [customer, serviceId, scheduledDate, scheduledTimeSlot, address]
+      properties:
+        customer:
+          type: object
+          required: [name, email, phone]
+          properties:
+            name:
+              type: string
+            email:
+              type: string
+              format: email
+            phone:
+              type: string
+        serviceId:
+          type: string
+        scheduledDate:
+          type: string
+          pattern: "^\\d{4}-\\d{2}-\\d{2}$"
+        scheduledTimeSlot:
+          type: string
+        address:
+          type: string
+        region:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+    OpenBookingStatus:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+          enum: [PENDING, CONFIRMED, EN_ROUTE, IN_PROGRESS, COMPLETED, CANCELLED]
+        scheduledDate:
+          type: string
+        scheduledTimeSlot:
+          type: string
+        service:
+          type: object
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+        worker:
+          type: object
+          nullable: true
+          properties:
+            name:
+              type: string
+    IntegrationChannel:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        scopes:
+          type: array
+          items:
+            type: string
+            enum: ["catalog:read", "booking:create", "booking:status"]
+        active:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+paths:
+  /api/open/catalog:
+    get:
+      tags: [Open Integration API]
+      summary: Public catalog listing
+      parameters:
+        - in: query
+          name: q
+          schema:
+            type: string
+        - in: query
+          name: category
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Catalog categories and services.
+  /api/open/catalog/{serviceId}:
+    get:
+      tags: [Open Integration API]
+      summary: Public service detail
+      parameters:
+        - in: path
+          name: serviceId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Service detail.
+        "404":
+          description: Service not found.
+  /api/open/bookings:
+    post:
+      tags: [Open Integration API]
+      summary: Create a real pending booking from an authorized integration channel
+      description: Requires an active integration channel with the `booking:create` scope.
+      security:
+        - ChannelApiKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OpenBookingRequest"
+      responses:
+        "201":
+          description: Pending booking created.
+        "401":
+          description: Missing or invalid channel key.
+        "403":
+          description: Active channel lacks the `booking:create` scope.
+        "404":
+          description: Service not found.
+        "409":
+          description: Customer email/phone mismatch or non-customer account.
+  /api/open/bookings/{id}/status:
+    get:
+      tags: [Open Integration API]
+      summary: Read minimal booking status for an authorized integration channel
+      description: Requires an active integration channel with the `booking:status` scope. The booking must have been created by the same channel.
+      security:
+        - ChannelApiKey: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Minimal booking status.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/OpenBookingStatus"
+        "401":
+          description: Missing or invalid channel key.
+        "403":
+          description: Active channel lacks the `booking:status` scope.
+        "404":
+          description: Booking not found for this channel.
+  /api/app/customer/account:
+    get:
+      tags: [First-party App API]
+      summary: First-party customer account snapshot
+      security:
+        - AppSession: []
+      responses:
+        "200":
+          description: Customer profile and bookings.
+        "401":
+          description: Missing app session.
+        "403":
+          description: Wrong role.
+  /api/app/customer/bookings:
+    get:
+      tags: [First-party App API]
+      summary: First-party customer booking list
+      security:
+        - AppSession: []
+      responses:
+        "200":
+          description: Customer bookings.
+    post:
+      tags: [First-party App API]
+      summary: First-party customer single-service booking
+      security:
+        - AppSession: []
+      responses:
+        "201":
+          description: Pending booking created.
+  /api/app/checkout:
+    post:
+      tags: [First-party App API]
+      summary: First-party customer cart checkout
+      security:
+        - AppSession: []
+      responses:
+        "201":
+          description: One booking per cart item quantity.
+  /api/app/manager/bookings:
+    get:
+      tags: [First-party App API]
+      summary: First-party manager booking list
+      security:
+        - AppSession: []
+      responses:
+        "200":
+          description: Latest bookings.
+    patch:
+      tags: [First-party App API]
+      summary: First-party manager booking status update
+      security:
+        - AppSession: []
+      responses:
+        "200":
+          description: Booking updated.
+  /api/app/manager/dispatch:
+    get:
+      tags: [First-party App API]
+      summary: First-party manager dispatch snapshot
+      security:
+        - AppSession: []
+      responses:
+        "200":
+          description: Pending bookings and online workers.
+    post:
+      tags: [First-party App API]
+      summary: First-party manager worker assignment
+      security:
+        - AppSession: []
+      responses:
+        "200":
+          description: Booking assigned and confirmed.
+  /api/app/worker/jobs:
+    get:
+      tags: [First-party App API]
+      summary: First-party worker active jobs
+      security:
+        - AppSession: []
+      responses:
+        "200":
+          description: Assigned jobs for today.
+    patch:
+      tags: [First-party App API]
+      summary: First-party worker forward status transition
+      security:
+        - AppSession: []
+      responses:
+        "200":
+          description: Job status updated.
+        "400":
+          description: Invalid status transition.
+  /api/app/worker/duty:
+    post:
+      tags: [First-party App API]
+      summary: First-party worker duty toggle
+      security:
+        - AppSession: []
+      responses:
+        "200":
+          description: Worker profile updated.
+  /api/app/admin/catalog:
+    get:
+      tags: [First-party App API]
+      summary: Admin catalog snapshot
+      security:
+        - AppSession: []
+      responses:
+        "200":
+          description: Categories and services for admin clients.
+        "401":
+          description: Missing app session.
+        "403":
+          description: Wrong role.
+  /api/app/admin/categories:
+    post:
+      tags: [First-party App API]
+      summary: Admin category create
+      security:
+        - AppSession: []
+      responses:
+        "201":
+          description: Category created.
+  /api/app/admin/categories/{id}:
+    patch:
+      tags: [First-party App API]
+      summary: Admin category update
+      security:
+        - AppSession: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Category updated.
+    delete:
+      tags: [First-party App API]
+      summary: Admin category delete
+      security:
+        - AppSession: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Category deleted.
+  /api/app/admin/services:
+    post:
+      tags: [First-party App API]
+      summary: Admin service create
+      security:
+        - AppSession: []
+      responses:
+        "201":
+          description: Service created.
+  /api/app/admin/services/{id}:
+    patch:
+      tags: [First-party App API]
+      summary: Admin service update
+      security:
+        - AppSession: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Service updated.
+    delete:
+      tags: [First-party App API]
+      summary: Admin service delete
+      security:
+        - AppSession: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Service deleted.
+  /api/app/admin/users:
+    post:
+      tags: [First-party App API]
+      summary: Admin staff user create
+      security:
+        - AppSession: []
+      responses:
+        "201":
+          description: Manager or worker user created.
+  /api/app/admin/users/{id}/role:
+    patch:
+      tags: [First-party App API]
+      summary: Admin user role update
+      security:
+        - AppSession: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: User role updated.
+  /api/app/admin/marketing/announcement:
+    patch:
+      tags: [First-party App API]
+      summary: Admin announcement update
+      security:
+        - AppSession: []
+      responses:
+        "200":
+          description: Site setting updated.
+  /api/app/admin/marketing/hero:
+    patch:
+      tags: [First-party App API]
+      summary: Admin landing hero update
+      security:
+        - AppSession: []
+      responses:
+        "200":
+          description: Site setting updated.
+  /api/app/admin/marketing/banner-scroll:
+    patch:
+      tags: [First-party App API]
+      summary: Admin banner auto-scroll update
+      security:
+        - AppSession: []
+      responses:
+        "200":
+          description: Site setting updated.
+  /api/app/admin/marketing/banners:
+    post:
+      tags: [First-party App API]
+      summary: Admin banner create
+      security:
+        - AppSession: []
+      responses:
+        "201":
+          description: Banner created.
+  /api/app/admin/marketing/banners/{id}:
+    patch:
+      tags: [First-party App API]
+      summary: Admin banner update
+      security:
+        - AppSession: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Banner updated.
+    delete:
+      tags: [First-party App API]
+      summary: Admin banner delete
+      security:
+        - AppSession: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Banner deleted.
+  /api/app/admin/integration-channels:
+    get:
+      tags: [First-party App API]
+      summary: Admin integration channel list
+      security:
+        - AppSession: []
+      responses:
+        "200":
+          description: Channels without plaintext keys.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/IntegrationChannel"
+    post:
+      tags: [First-party App API]
+      summary: Admin integration channel create
+      description: Returns the plaintext API key only in this response.
+      security:
+        - AppSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, scopes]
+              properties:
+                name:
+                  type: string
+                scopes:
+                  type: array
+                  items:
+                    type: string
+                    enum: ["catalog:read", "booking:create", "booking:status"]
+      responses:
+        "201":
+          description: Channel created with one-time plaintext key.
+  /api/app/admin/integration-channels/{id}:
+    patch:
+      tags: [First-party App API]
+      summary: Admin integration channel active flag update
+      security:
+        - AppSession: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [active]
+              properties:
+                active:
+                  type: boolean
+      responses:
+        "200":
+          description: Channel active state updated.
+        "400":
+          description: "'active' must be a boolean."
+  /api/app/admin/integration-channels/{id}/rotate:
+    post:
+      tags: [First-party App API]
+      summary: Admin integration channel key rotation
+      description: Replaces the old key and returns the new plaintext key only in this response.
+      security:
+        - AppSession: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Channel key rotated.

@@ -56,10 +56,11 @@ test("mobile shell keeps bottom navigation visible", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await expectPublicPageHealthy(page, "/");
 
-  await expect(page.getByRole("navigation", { name: "Bottom navigation" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Home" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Bookings" })).toBeVisible();
-  await expect(page.getByRole("link", { name: /Account|Profile/i })).toBeVisible();
+  const bottomNav = page.getByRole("navigation", { name: "Bottom navigation" });
+  await expect(bottomNav).toBeVisible();
+  await expect(bottomNav.getByRole("link", { name: "Home" })).toBeVisible();
+  await expect(bottomNav.getByRole("link", { name: "Bookings", exact: true })).toBeVisible();
+  await expect(bottomNav.getByRole("link", { name: /Account|Profile/i })).toBeVisible();
 });
 
 test("open catalog API returns stable public contract", async ({ request }) => {

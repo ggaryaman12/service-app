@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
 import { assignWorker } from "@/app/manager/actions";
+import { getDispatchSnapshot } from "@/features/bookings/booking.service";
 
 export default async function ManagerDispatchPage({
   searchParams
@@ -9,25 +9,7 @@ export default async function ManagerDispatchPage({
 }) {
   const { region } = (await searchParams) ?? {};
 
-  const [pendingBookings, availableWorkers] = await Promise.all([
-    prisma.booking.findMany({
-      where: {
-        status: "PENDING",
-        ...(region ? { customer: { region } } : {})
-      },
-      include: { customer: true, service: { include: { category: true } } },
-      orderBy: [{ scheduledDate: "asc" }],
-      take: 25
-    }),
-    prisma.workerProfile.findMany({
-      where: {
-        isOnline: true,
-        user: { role: "WORKER", ...(region ? { region } : {}) }
-      },
-      include: { user: true },
-      orderBy: [{ user: { name: "asc" } }]
-    })
-  ]);
+  const [pendingBookings, availableWorkers] = await getDispatchSnapshot(region);
 
   return (
     <div className="space-y-4">

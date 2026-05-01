@@ -1,60 +1,32 @@
 "use server";
 
-import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { redirect } from "next/navigation";
 
-function requireNonEmpty(value: FormDataEntryValue | null, field: string) {
-  const str = String(value ?? "").trim();
-  if (!str) throw new Error(`${field} is required`);
-  return str;
-}
+import { createBooking as createBookingService } from "@/features/bookings/booking.service";
+import { requireCustomer } from "@/features/auth/session.service";
+import { AppError } from "@/features/shared/errors";
 
 export async function createBooking(formData: FormData) {
-  const session = await auth();
-  if (!session?.user?.email) {
-    const serviceId = String(formData.get("serviceId") ?? "");
-    redirect(`/customer/login?next=${encodeURIComponent(`/book/${serviceId}`)}`);
+  const serviceId = String(formData.get("serviceId") ?? "");
+  let customer;
+  try {
+    customer = await requireCustomer();
+  } catch (error) {
+    if (error instanceof AppError && error.status === 401) {
+      redirect(`/customer/login?next=${encodeURIComponent(`/book/${serviceId}`)}`);
+    }
+    throw error;
   }
 
-  const serviceId = requireNonEmpty(formData.get("serviceId"), "Service");
-  const address = requireNonEmpty(formData.get("address"), "Address");
-  const region = String(formData.get("region") ?? "").trim() || null;
-  const scheduledDateStr = requireNonEmpty(formData.get("scheduledDate"), "Date");
-  const scheduledTimeSlot = requireNonEmpty(formData.get("scheduledTimeSlot"), "Time slot");
-  const notes = String(formData.get("notes") ?? "").trim() || null;
-
-  const customer = await prisma.user.findUnique({
-    where: { email: session.user.email },
-    select: { id: true }
-  });
-  if (!customer) throw new Error("User not found");
-
-  const service = await prisma.service.findUnique({
-    where: { id: serviceId },
-    select: { basePrice: true }
-  });
-  if (!service) throw new Error("Service not found");
-
-  const scheduledDate = new Date(`${scheduledDateStr}T00:00:00.000Z`);
-
-  await prisma.user.update({
-    where: { id: customer.id },
-    data: { region }
-  });
-
-  const booking = await prisma.booking.create({
-    data: {
-      customerId: customer.id,
-      serviceId,
-      status: "PENDING",
-      scheduledDate,
-      scheduledTimeSlot,
-      address,
-      totalAmount: service.basePrice,
-      notes
-    }
+  const booking = await createBookingService({
+    customerId: customer.id,
+    serviceId,
+    address: String(formData.get("address") ?? ""),
+    region: String(formData.get("region") ?? "").trim() || null,
+    scheduledDate: String(formData.get("scheduledDate") ?? ""),
+    scheduledTimeSlot: String(formData.get("scheduledTimeSlot") ?? ""),
+    notes: String(formData.get("notes") ?? "").trim() || null
   });
 
   revalidatePath("/manager/dispatch");

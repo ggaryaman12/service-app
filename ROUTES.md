@@ -68,7 +68,8 @@ Important auth rule: customers must use customer login. Admin, manager, and work
 | Admin | Category CRUD, service CRUD, staff creation, marketing settings, banners | `/admin/*` |
 | Manager | Booking list, booking detail, dispatch worker assignment, status updates | `/manager/*` |
 | Worker | Duty toggle, active jobs, assigned job status updates | `/worker/*` |
-| Open API | Public catalog APIs for third-party clients, AI chatbots, or WhatsApp integrations | `/api/open/catalog*` |
+| Open API | Public catalog plus authorized booking/status APIs for third-party clients, AI chatbots, or WhatsApp integrations | `/api/open/*` |
+| First-party API | Session-authenticated REST APIs for JammuServe-owned web/mobile clients | `/api/app/*` |
 | Upload signing | Admin-only Cloudinary upload signature generation | `/api/cloudinary/sign` |
 
 ## Page Routes
@@ -112,6 +113,7 @@ Admin routes require an authenticated `ADMIN` user.
 | `/admin/services` | Create, update, delete services. Fields include category, name, description, image, base price, estimated minutes. |
 | `/admin/users` | Create manager/worker staff users and update user roles. Worker creation also creates a `WorkerProfile`. |
 | `/admin/marketing` | Manage announcement, landing hero media/text/CTA, banner auto-scroll, and offer/banner records. |
+| `/admin/integration-channels` | Manage DB-backed integration channels, API key rotation, active status, and allowed scopes. |
 
 ### Manager Routes
 
@@ -243,6 +245,115 @@ Not found response:
     "message": "Service not found"
   }
 }
+```
+
+### `POST /api/open/bookings`
+
+Creates a real `PENDING` booking for authorized third-party, chatbot, or WhatsApp channels.
+
+Auth:
+
+```text
+x-api-key: <integration-channel-api-key>
+```
+
+The channel must be active and include the `booking:create` scope. Missing/invalid keys return `401`; active keys without the scope return `403 CHANNEL_FORBIDDEN`.
+
+Request body:
+
+```json
+{
+  "customer": {
+    "name": "Customer Name",
+    "email": "customer@example.com",
+    "phone": "9999999999"
+  },
+  "serviceId": "service-id",
+  "scheduledDate": "2026-05-02",
+  "scheduledTimeSlot": "09:00 - 11:00",
+  "address": "House/Flat, street, landmark",
+  "region": "Gandhi Nagar",
+  "notes": "Optional notes"
+}
+```
+
+If the customer email does not exist, the API creates a locked `CUSTOMER` account with the supplied name, email, and phone. If the email belongs to staff or the phone does not match an existing customer, the request is rejected.
+
+Successful response:
+
+```json
+{
+  "data": {
+    "id": "booking-id",
+    "status": "PENDING"
+  }
+}
+```
+
+### `GET /api/open/bookings/[id]/status`
+
+Returns minimal booking status for authorized integration channels. Status reads are scoped to bookings created by the same integration channel key.
+
+Auth:
+
+```text
+x-api-key: <integration-channel-api-key>
+```
+
+The channel must be active and include the `booking:status` scope. Missing/invalid keys return `401`; active keys without the scope return `403 CHANNEL_FORBIDDEN`; bookings not owned by that channel return `404 BOOKING_NOT_FOUND`.
+
+Example:
+
+```bash
+curl -H "x-api-key: <key>" "http://localhost:3000/api/open/bookings/<BOOKING_ID>/status"
+```
+
+Successful response:
+
+```json
+{
+  "data": {
+    "id": "booking-id",
+    "status": "PENDING",
+    "scheduledDate": "2026-05-02",
+    "scheduledTimeSlot": "09:00 - 11:00",
+    "service": {
+      "id": "service-id",
+      "name": "Service name"
+    },
+    "worker": null
+  }
+}
+```
+
+### First-party `/api/app/*`
+
+First-party app APIs use the same Auth.js cookie/session authentication as the web app. They are intended for JammuServe-owned web/mobile clients, not third-party channels.
+
+| Endpoint | Roles | Purpose |
+|---|---|---|
+| `GET /api/app/customer/account` | `CUSTOMER` | Customer profile plus recent bookings. |
+| `GET /api/app/customer/bookings` | `CUSTOMER` | Customer booking list. |
+| `POST /api/app/customer/bookings` | `CUSTOMER` | Single-service booking creation. |
+| `POST /api/app/checkout` | `CUSTOMER` | Cart checkout; creates one booking per item quantity. |
+| `GET /api/app/manager/bookings` | `MANAGER`, `ADMIN` | Latest bookings, optional `region` filter. |
+| `PATCH /api/app/manager/bookings` | `MANAGER`, `ADMIN` | Manager booking status update. |
+| `GET /api/app/manager/dispatch` | `MANAGER`, `ADMIN` | Pending bookings plus online workers. |
+| `POST /api/app/manager/dispatch` | `MANAGER`, `ADMIN` | Assign worker and move booking to `CONFIRMED`. |
+| `GET /api/app/worker/jobs` | `WORKER`, `ADMIN` | Worker active jobs for today. |
+| `PATCH /api/app/worker/jobs` | `WORKER`, `ADMIN` | Assigned worker forward status transition. |
+| `POST /api/app/worker/duty` | `WORKER`, `ADMIN` | Toggle duty online/offline. |
+| `GET /api/app/admin/catalog` | `ADMIN` | Admin categories and services snapshot. |
+| `/api/app/admin/categories*` | `ADMIN` | Category create/update/delete. |
+| `/api/app/admin/services*` | `ADMIN` | Service create/update/delete. |
+| `/api/app/admin/users*` | `ADMIN` | Staff creation and role updates. |
+| `/api/app/admin/marketing/*` | `ADMIN` | Announcement, hero, banner auto-scroll, and banner CRUD. |
+| `/api/app/admin/integration-channels*` | `ADMIN` | List/create channels, rotate keys, activate/deactivate channels. |
+
+API contract details are also documented in:
+
+```text
+docs/api/openapi.yaml
 ```
 
 ### `POST /api/cloudinary/sign`

@@ -1,51 +1,39 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
-import { BookingStatus } from "@prisma/client";
-import { auth } from "@/auth";
 
-function requireNonEmpty(value: FormDataEntryValue | null, field: string) {
-  const str = String(value ?? "").trim();
-  if (!str) throw new Error(`${field} is required`);
-  return str;
-}
-
-async function requireManager() {
-  const session = await auth();
-  const role = session?.user?.role;
-  if (!session?.user || (role !== "MANAGER" && role !== "ADMIN")) {
-    throw new Error("Unauthorized");
-  }
-}
+import {
+  assignWorkerToBooking,
+  updateBookingStatusAsManager
+} from "@/features/bookings/booking.service";
+import { requireManager } from "@/features/auth/session.service";
 
 export async function assignWorker(formData: FormData) {
-  await requireManager();
-  const bookingId = requireNonEmpty(formData.get("bookingId"), "Booking ID");
-  const workerId = requireNonEmpty(formData.get("workerId"), "Worker");
-
-  await prisma.booking.update({
-    where: { id: bookingId },
-    data: {
-      workerId,
-      status: "CONFIRMED"
-    }
+  const manager = await requireManager();
+  await assignWorkerToBooking({
+    bookingId: String(formData.get("bookingId") ?? ""),
+    workerId: String(formData.get("workerId") ?? ""),
+    managerId: manager.id
   });
 
   revalidatePath("/manager/dispatch");
   revalidatePath("/manager/bookings");
+  revalidatePath("/worker");
+  revalidatePath("/account");
 }
 
 export async function updateBookingStatus(formData: FormData) {
-  await requireManager();
-  const bookingId = requireNonEmpty(formData.get("bookingId"), "Booking ID");
-  const status = requireNonEmpty(formData.get("status"), "Status") as BookingStatus;
+  const manager = await requireManager();
+  const bookingId = String(formData.get("bookingId") ?? "");
 
-  await prisma.booking.update({
-    where: { id: bookingId },
-    data: { status }
+  await updateBookingStatusAsManager({
+    bookingId,
+    status: String(formData.get("status") ?? ""),
+    managerId: manager.id
   });
 
   revalidatePath("/manager/bookings");
   revalidatePath(`/manager/bookings/${bookingId}`);
+  revalidatePath("/worker");
+  revalidatePath("/account");
 }
