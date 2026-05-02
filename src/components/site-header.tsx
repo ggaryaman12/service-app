@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { auth, signOut } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { TransitionLink } from "@/components/route-transition";
 
 export async function SiteHeader() {
   const session = await auth();
@@ -23,13 +23,14 @@ export async function SiteHeader() {
     <header className="sticky top-0 z-30 -mx-4 border-b border-border-subtle bg-surface-elevated/90 px-4 py-3 backdrop-blur-md md:-mx-6 md:px-6">
       <div className="flex items-center justify-between">
         <div className="flex min-w-0 items-center gap-3">
-          <Link
+          <TransitionLink
             href="/"
+            transitionLabel="Home"
             className="inline-flex shrink-0 items-center gap-2 text-label text-text-primary transition-transform active:scale-95"
           >
             <span className="h-2.5 w-2.5 rounded-full bg-brand-primary shadow-button-primary" />
             <span>JammuServe</span>
-          </Link>
+          </TransitionLink>
           <button
             type="button"
             aria-label="Current location"
@@ -46,43 +47,48 @@ export async function SiteHeader() {
 
         <nav className="flex items-center gap-1 text-label text-text-secondary">
           <div className="hidden items-center gap-1 md:flex">
-            <Link
+            <TransitionLink
               href="/services"
+              transitionLabel="Services"
               className="inline-flex h-11 items-center rounded-full px-4 hover:bg-surface-muted transition-transform active:scale-95"
             >
               Services
-            </Link>
+            </TransitionLink>
             {session?.user ? (
-              <Link
+              <TransitionLink
                 href="/account"
+                transitionLabel="Bookings"
                 className="inline-flex h-11 items-center rounded-full px-4 hover:bg-surface-muted transition-transform active:scale-95"
               >
                 Bookings
-              </Link>
+              </TransitionLink>
             ) : null}
             {session?.user?.role === "ADMIN" ? (
-              <Link
-                href="/admin"
+              <TransitionLink
+                href="/dashboard"
+                transitionLabel="Staff dashboard"
                 className="inline-flex h-11 items-center rounded-full px-4 hover:bg-surface-muted transition-transform active:scale-95"
               >
-                Admin
-              </Link>
+                Dashboard
+              </TransitionLink>
             ) : null}
-            {session?.user?.role === "MANAGER" || session?.user?.role === "ADMIN" ? (
-              <Link
-                href="/manager"
+            {session?.user?.role === "MANAGER" ? (
+              <TransitionLink
+                href="/dashboard"
+                transitionLabel="Manager dashboard"
                 className="inline-flex h-11 items-center rounded-full px-4 hover:bg-surface-muted transition-transform active:scale-95"
               >
                 Manager
-              </Link>
+              </TransitionLink>
             ) : null}
             {session?.user?.role === "WORKER" || session?.user?.role === "ADMIN" ? (
-              <Link
+              <TransitionLink
                 href="/worker"
+                transitionLabel="Worker"
                 className="inline-flex h-11 items-center rounded-full px-4 hover:bg-surface-muted transition-transform active:scale-95"
               >
                 Worker
-              </Link>
+              </TransitionLink>
             ) : null}
           </div>
           {session?.user ? (
@@ -90,15 +96,16 @@ export async function SiteHeader() {
               <span className="hidden text-caption text-text-muted sm:inline">
                 {session.user.email} · {session.user.role}
               </span>
-              <Link
+              <TransitionLink
                 href="/account"
+                transitionLabel="Account"
                 className="inline-flex h-11 w-11 items-center justify-center rounded-full hover:bg-surface-muted transition-transform active:scale-95 md:hidden"
                 aria-label="Account"
               >
                 <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current text-text-secondary">
                   <path d="M12 12a5 5 0 100-10 5 5 0 000 10zm0 2c-5 0-9 3-9 7v1h18v-1c0-4-4-7-9-7z" />
                 </svg>
-              </Link>
+              </TransitionLink>
               <form action={signOutAction}>
                 <button
                   className="inline-flex h-11 w-11 items-center justify-center rounded-full hover:bg-surface-muted transition-transform active:scale-95"
@@ -113,18 +120,20 @@ export async function SiteHeader() {
             </>
           ) : (
             <>
-              <Link
+              <TransitionLink
                 href="/customer/login"
+                transitionLabel="Login"
                 className="inline-flex h-11 items-center rounded-full px-4 text-text-secondary hover:bg-surface-muted transition-transform active:scale-95"
               >
                 Login
-              </Link>
-              <Link
+              </TransitionLink>
+              <TransitionLink
                 href="/customer/register"
+                transitionLabel="Register"
                 className="inline-flex h-11 items-center rounded-full bg-brand-primary px-4 font-semibold text-text-inverse shadow-button-primary transition-colors hover:bg-brand-primary-hover active:scale-95"
               >
                 Register
-              </Link>
+              </TransitionLink>
             </>
           )}
         </nav>

@@ -29,16 +29,18 @@ enum MediaType {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  name         String
-  email        String   @unique
-  passwordHash String
-  phone        String?
-  role         Role     @default(CUSTOMER)
-  region       String?
-  createdAt    DateTime @default(now())
+  id                  String   @id @default(cuid())
+  name                String
+  email               String   @unique
+  passwordHash        String
+  phone               String?
+  role                Role     @default(CUSTOMER)
+  region              String?
+  managerAccessRoleId String?
+  createdAt           DateTime @default(now())
 
   workerProfile WorkerProfile?
+  managerAccessRole ManagerAccessRole? @relation(fields: [managerAccessRoleId], references: [id], onDelete: SetNull)
 
   customerBookings Booking[] @relation("CustomerBookings")
   workerBookings   Booking[] @relation("WorkerBookings")
@@ -46,6 +48,20 @@ model User {
 
   customerReviews Review[] @relation("CustomerReviews")
   workerReviews   Review[] @relation("WorkerReviews")
+
+  @@index([managerAccessRoleId])
+}
+
+model ManagerAccessRole {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?  @db.Text
+  permissions Json
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  managers User[]
 }
 
 model WorkerProfile {

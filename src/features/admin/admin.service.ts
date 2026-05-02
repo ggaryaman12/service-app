@@ -2,6 +2,7 @@ import { Role } from "@prisma/client";
 
 import { hashPassword } from "@/lib/password";
 import { prisma } from "@/lib/prisma";
+import { columnExists } from "@/lib/db-meta";
 import { AppError, assertNonEmpty } from "@/features/shared/errors";
 
 function parseBoolean(value: unknown) {
@@ -74,12 +75,14 @@ export async function createService(input: {
   basePrice: unknown;
   estimatedMinutes: unknown;
 }) {
+  const hasServiceImage = await columnExists("Service", "image");
+
   return prisma.service.create({
     data: {
       categoryId: assertNonEmpty(input.categoryId, "Category"),
       name: assertNonEmpty(input.name, "Name"),
       description: assertNonEmpty(input.description, "Description"),
-      image: String(input.image ?? "").trim() || null,
+      ...(hasServiceImage ? { image: String(input.image ?? "").trim() || null } : {}),
       basePrice: parseNumber(input.basePrice, "Base price"),
       estimatedMinutes: parseNumber(input.estimatedMinutes, "Estimated minutes")
     }
@@ -95,13 +98,15 @@ export async function updateService(input: {
   basePrice: unknown;
   estimatedMinutes: unknown;
 }) {
+  const hasServiceImage = await columnExists("Service", "image");
+
   return prisma.service.update({
     where: { id: assertNonEmpty(input.id, "ID") },
     data: {
       categoryId: assertNonEmpty(input.categoryId, "Category"),
       name: assertNonEmpty(input.name, "Name"),
       description: assertNonEmpty(input.description, "Description"),
-      image: String(input.image ?? "").trim() || null,
+      ...(hasServiceImage ? { image: String(input.image ?? "").trim() || null } : {}),
       basePrice: parseNumber(input.basePrice, "Base price"),
       estimatedMinutes: parseNumber(input.estimatedMinutes, "Estimated minutes")
     }

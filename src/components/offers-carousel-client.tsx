@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useRef } from "react";
-import Link from "next/link";
+import { TransitionLink } from "@/components/route-transition";
 
 type BannerItem = {
   id: string;
@@ -85,12 +85,13 @@ export function OffersCarouselClient({
           <div className="p-4">
             <p className="text-body-sm font-semibold text-text-primary">{b.title}</p>
             <p className="mt-1 text-body-sm text-text-secondary">{b.subtitle}</p>
-            <Link
+            <TransitionLink
               href={b.href ?? "/services"}
+              transitionLabel="Offer"
               className="mt-3 inline-flex h-11 items-center rounded-full bg-surface-inverse px-4 text-label text-text-inverse transition-transform active:scale-95"
             >
               Explore
-            </Link>
+            </TransitionLink>
           </div>
         </motion.div>
       ))}

@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
+import { TransitionLink } from "@/components/route-transition";
 
 function NavIcon({
   active,
@@ -56,9 +56,10 @@ export function MobileNav() {
               ? pathname === "/"
               : pathname.startsWith(item.href);
           return (
-            <Link
+            <TransitionLink
               key={item.key}
               href={item.href}
+              transitionLabel={item.label}
               className="flex h-11 flex-col items-center justify-center gap-1 rounded-ui-sm transition-colors hover:bg-surface-muted active:scale-95"
               aria-label={item.label}
             >
@@ -89,7 +90,7 @@ export function MobileNav() {
               >
                 {item.label}
               </span>
-            </Link>
+            </TransitionLink>
           );
         })}
       </div>

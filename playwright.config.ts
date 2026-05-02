@@ -1,7 +1,11 @@
 import { defineConfig, devices } from "@playwright/test";
+import path from "node:path";
 
 const port = Number(process.env.PLAYWRIGHT_PORT ?? 3100);
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? `http://127.0.0.1:${port}`;
+const artifactRoot =
+  process.env.PLAYWRIGHT_ARTIFACTS_DIR ??
+  path.resolve(process.cwd(), "../.jammuserve-playwright");
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -15,9 +19,9 @@ export default defineConfig({
   workers: 1,
   reporter: [
     ["list"],
-    ["html", { outputFolder: "output/playwright/report", open: "never" }]
+    ["html", { outputFolder: path.join(artifactRoot, "report"), open: "never" }]
   ],
-  outputDir: "output/playwright/results",
+  outputDir: path.join(artifactRoot, "results"),
   use: {
     baseURL,
     trace: "retain-on-failure",

@@ -235,27 +235,42 @@ paths:
       responses:
         "201":
           description: One booking per cart item quantity.
-  /api/app/manager/bookings:
+  /api/app/bookings:
     get:
       tags: [First-party App API]
-      summary: First-party manager booking list
+      summary: First-party staff booking list
       security:
         - AppSession: []
       responses:
         "200":
-          description: Latest bookings.
+          description: Latest bookings in the viewer permission scope.
     patch:
       tags: [First-party App API]
-      summary: First-party manager booking status update
+      summary: First-party staff booking status update
       security:
         - AppSession: []
       responses:
         "200":
           description: Booking updated.
-  /api/app/manager/dispatch:
+  /api/app/bookings/{id}:
     get:
       tags: [First-party App API]
-      summary: First-party manager dispatch snapshot
+      summary: First-party staff booking detail
+      security:
+        - AppSession: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Booking detail in the viewer permission scope.
+  /api/app/dispatch:
+    get:
+      tags: [First-party App API]
+      summary: First-party staff dispatch snapshot
       security:
         - AppSession: []
       responses:
@@ -263,7 +278,7 @@ paths:
           description: Pending bookings and online workers.
     post:
       tags: [First-party App API]
-      summary: First-party manager worker assignment
+      summary: First-party staff worker assignment
       security:
         - AppSession: []
       responses:
@@ -300,20 +315,20 @@ paths:
   /api/app/admin/catalog:
     get:
       tags: [First-party App API]
-      summary: Admin catalog snapshot
+      summary: Staff catalog snapshot
       security:
         - AppSession: []
       responses:
         "200":
-          description: Categories and services for admin clients.
+          description: Categories and services for clients with catalog view access.
         "401":
           description: Missing app session.
         "403":
-          description: Wrong role.
+          description: Wrong role or missing permission.
   /api/app/admin/categories:
     post:
       tags: [First-party App API]
-      summary: Admin category create
+      summary: Staff category create
       security:
         - AppSession: []
       responses:
@@ -322,7 +337,7 @@ paths:
   /api/app/admin/categories/{id}:
     patch:
       tags: [First-party App API]
-      summary: Admin category update
+      summary: Staff category update
       security:
         - AppSession: []
       parameters:
@@ -336,7 +351,7 @@ paths:
           description: Category updated.
     delete:
       tags: [First-party App API]
-      summary: Admin category delete
+      summary: Staff category delete
       security:
         - AppSession: []
       parameters:
@@ -351,7 +366,7 @@ paths:
   /api/app/admin/services:
     post:
       tags: [First-party App API]
-      summary: Admin service create
+      summary: Staff service create
       security:
         - AppSession: []
       responses:
@@ -360,7 +375,7 @@ paths:
   /api/app/admin/services/{id}:
     patch:
       tags: [First-party App API]
-      summary: Admin service update
+      summary: Staff service update
       security:
         - AppSession: []
       parameters:
@@ -374,7 +389,7 @@ paths:
           description: Service updated.
     delete:
       tags: [First-party App API]
-      summary: Admin service delete
+      summary: Staff service delete
       security:
         - AppSession: []
       parameters:
@@ -386,19 +401,27 @@ paths:
       responses:
         "200":
           description: Service deleted.
-  /api/app/admin/users:
+  /api/app/roles:
+    get:
+      tags: [First-party App API]
+      summary: Admin manager access role list
+      security:
+        - AppSession: []
+      responses:
+        "200":
+          description: Manager access roles.
     post:
       tags: [First-party App API]
-      summary: Admin staff user create
+      summary: Admin manager access role create
       security:
         - AppSession: []
       responses:
         "201":
-          description: Manager or worker user created.
-  /api/app/admin/users/{id}/role:
+          description: Manager access role created.
+  /api/app/roles/{id}:
     patch:
       tags: [First-party App API]
-      summary: Admin user role update
+      summary: Admin manager access role update
       security:
         - AppSession: []
       parameters:
@@ -409,11 +432,43 @@ paths:
             type: string
       responses:
         "200":
-          description: User role updated.
+          description: Manager access role updated.
+  /api/app/managers:
+    get:
+      tags: [First-party App API]
+      summary: Admin manager list
+      security:
+        - AppSession: []
+      responses:
+        "200":
+          description: Manager accounts and assigned access roles.
+    post:
+      tags: [First-party App API]
+      summary: Admin manager create
+      security:
+        - AppSession: []
+      responses:
+        "201":
+          description: Manager account created with assigned access role.
+  /api/app/managers/{id}:
+    patch:
+      tags: [First-party App API]
+      summary: Admin manager update
+      security:
+        - AppSession: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Manager account updated.
   /api/app/admin/marketing/announcement:
     patch:
       tags: [First-party App API]
-      summary: Admin announcement update
+      summary: Staff announcement update
       security:
         - AppSession: []
       responses:
@@ -422,7 +477,7 @@ paths:
   /api/app/admin/marketing/hero:
     patch:
       tags: [First-party App API]
-      summary: Admin landing hero update
+      summary: Staff landing hero update
       security:
         - AppSession: []
       responses:
@@ -431,7 +486,7 @@ paths:
   /api/app/admin/marketing/banner-scroll:
     patch:
       tags: [First-party App API]
-      summary: Admin banner auto-scroll update
+      summary: Staff banner auto-scroll update
       security:
         - AppSession: []
       responses:
@@ -440,7 +495,7 @@ paths:
   /api/app/admin/marketing/banners:
     post:
       tags: [First-party App API]
-      summary: Admin banner create
+      summary: Staff banner create
       security:
         - AppSession: []
       responses:
@@ -449,7 +504,7 @@ paths:
   /api/app/admin/marketing/banners/{id}:
     patch:
       tags: [First-party App API]
-      summary: Admin banner update
+      summary: Staff banner update
       security:
         - AppSession: []
       parameters:
@@ -463,7 +518,7 @@ paths:
           description: Banner updated.
     delete:
       tags: [First-party App API]
-      summary: Admin banner delete
+      summary: Staff banner delete
       security:
         - AppSession: []
       parameters:
@@ -478,7 +533,7 @@ paths:
   /api/app/admin/integration-channels:
     get:
       tags: [First-party App API]
-      summary: Admin integration channel list
+      summary: Staff integration channel list
       security:
         - AppSession: []
       responses:
@@ -495,7 +550,7 @@ paths:
                       $ref: "#/components/schemas/IntegrationChannel"
     post:
       tags: [First-party App API]
-      summary: Admin integration channel create
+      summary: Staff integration channel create
       description: Returns the plaintext API key only in this response.
       security:
         - AppSession: []
@@ -520,7 +575,7 @@ paths:
   /api/app/admin/integration-channels/{id}:
     patch:
       tags: [First-party App API]
-      summary: Admin integration channel active flag update
+      summary: Staff integration channel active flag update
       security:
         - AppSession: []
       parameters:
@@ -547,7 +602,7 @@ paths:
   /api/app/admin/integration-channels/{id}/rotate:
     post:
       tags: [First-party App API]
-      summary: Admin integration channel key rotation
+      summary: Staff integration channel key rotation
       description: Replaces the old key and returns the new plaintext key only in this response.
       security:
         - AppSession: []

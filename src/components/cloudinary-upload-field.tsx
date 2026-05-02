@@ -73,10 +73,13 @@ export function CloudinaryUploadField({
     <div className="space-y-2">
       <div className="flex items-end justify-between gap-3">
         <div className="min-w-0">
-          <label className="block text-sm font-medium" htmlFor={name}>
+          <label
+            className="block text-xs font-black uppercase tracking-[0.12em] text-[#7a6f5f]"
+            htmlFor={name}
+          >
             {label}
           </label>
-          {helpText ? <p className="mt-1 text-xs text-neutral-500">{helpText}</p> : null}
+          {helpText ? <p className="mt-1 text-xs text-[#7a7268]">{helpText}</p> : null}
         </div>
         <div className="flex items-center gap-2">
           <input
@@ -89,12 +92,12 @@ export function CloudinaryUploadField({
               if (f) void upload(f);
             }}
           />
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => fileRef.current?.click()}
-            className="inline-flex h-11 items-center rounded-md border border-neutral-200 px-3 py-2 text-sm font-medium disabled:opacity-50"
-          >
+	          <button
+	            type="button"
+	            disabled={busy}
+	            onClick={() => fileRef.current?.click()}
+	            className="inline-flex min-h-10 items-center rounded-ui-sm border border-[#ded5c6] bg-white px-3 py-2 text-sm font-black text-[#191816] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#fbf8ef] disabled:translate-y-0 disabled:opacity-50"
+	          >
             {busy ? "Uploading…" : `Upload ${resourceType}`}
           </button>
         </div>
@@ -105,16 +108,15 @@ export function CloudinaryUploadField({
         id={name}
         name={name}
         defaultValue={defaultValue}
-        placeholder="https://..."
-        className="w-full rounded-md border border-neutral-200 px-3 py-2 text-sm"
-      />
+	        placeholder="https://..."
+	        className="min-h-11 w-full rounded-ui-sm border border-[#ded5c6] bg-white px-3 py-2 text-sm text-[#191816] outline-none transition focus:border-[#b99a50] focus:ring-2 focus:ring-[#f3b43f]/30"
+	      />
 
-      {err ? (
-        <p className="text-sm text-orange-700">
+	      {err ? (
+	        <p className="text-sm font-semibold text-[#b42318]">
           {err}
         </p>
       ) : null}
     </div>
   );
 }
-

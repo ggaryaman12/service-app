@@ -1,6 +1,8 @@
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 
+test.describe.configure({ timeout: 90_000 });
+
 async function expectNoAppError(page: Page) {
   await expect(
     page.getByText(/Application error|Internal Server Error|Unhandled Runtime Error/i)

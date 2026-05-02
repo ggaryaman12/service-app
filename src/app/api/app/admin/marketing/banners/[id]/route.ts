@@ -1,6 +1,6 @@
 import { deleteBanner, updateBanner } from "@/features/marketing/marketing.service";
-import { requireAdmin } from "@/features/auth/session.service";
 import { jsonError, jsonOk, readJson } from "@/app/api/_lib/respond";
+import { requireFeaturePermission } from "@/features/operations/permission-guard.service";
 
 export const dynamic = "force-dynamic";
 
@@ -9,7 +9,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await requireAdmin();
+    await requireFeaturePermission("marketing.manage");
     const { id } = await params;
     const body = await readJson<Record<string, unknown>>(request);
     return jsonOk(
@@ -34,7 +34,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await requireAdmin();
+    await requireFeaturePermission("marketing.manage");
     const { id } = await params;
     return jsonOk(await deleteBanner(id));
   } catch (error) {

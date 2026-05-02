@@ -23,7 +23,21 @@ export async function requireRole(allowedRoles: Role[]) {
 
   const user = await prisma.user.findUnique({
     where: { email: sessionUser.email },
-    select: { id: true, email: true, role: true, name: true }
+    select: {
+      id: true,
+      email: true,
+      role: true,
+      name: true,
+      region: true,
+      managerAccessRole: {
+        select: {
+          id: true,
+          name: true,
+          permissions: true,
+          active: true
+        }
+      }
+    }
   });
   if (!user) throw new AppError("USER_NOT_FOUND", "User not found", 404);
   if (!allowedRoles.includes(user.role as Role)) {
@@ -41,8 +55,16 @@ export async function requireAdmin() {
   return requireRole(["ADMIN"]);
 }
 
+export async function requireOperationsUser() {
+  return requireRole(["ADMIN", "MANAGER"]);
+}
+
+export async function requireStaffFeatureUser() {
+  return requireRole(["ADMIN", "MANAGER"]);
+}
+
 export async function requireManager() {
-  return requireRole(["MANAGER", "ADMIN"]);
+  return requireOperationsUser();
 }
 
 export async function requireWorker() {

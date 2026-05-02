@@ -1,9 +1,9 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import { useEffect, useState } from "react";
+import { TransitionLink } from "@/components/route-transition";
 
 type LandingHeroProps = {
   enabled: boolean;
@@ -156,18 +156,20 @@ export function LandingHero(props: LandingHeroProps) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.58, delay: 0.26, ease: [0.22, 1, 0.36, 1] }}
             >
-              <Link
+              <TransitionLink
                 href={href}
+                transitionLabel={props.ctaText}
                 className="inline-flex h-12 items-center justify-center rounded-full bg-brand-primary px-6 text-sm font-semibold text-text-inverse shadow-button-primary transition hover:bg-brand-primary-hover active:scale-95"
               >
                 {props.ctaText}
-              </Link>
-              <Link
+              </TransitionLink>
+              <TransitionLink
                 href="/services"
+                transitionLabel="Services"
                 className="inline-flex h-12 items-center justify-center rounded-full bg-surface-default/10 px-6 text-sm font-semibold text-text-inverse ring-1 ring-text-inverse/20 backdrop-blur-md transition hover:bg-surface-default/20 active:scale-95"
               >
                 Browse services
-              </Link>
+              </TransitionLink>
             </motion.div>
 
             <div className="mt-8 flex max-w-xl items-center gap-4">

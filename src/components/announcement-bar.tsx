@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { tableExists } from "@/lib/db-meta";
+import { TransitionLink } from "@/components/route-transition";
 
 export async function AnnouncementBar() {
   const hasSettings = await tableExists("SiteSetting");
@@ -15,12 +15,13 @@ export async function AnnouncementBar() {
     <div className="-mx-4 border-b border-border-subtle bg-surface-inverse px-4 py-2 text-text-inverse md:-mx-6 md:px-6">
       <div className="flex w-full items-center justify-between gap-3">
         <p className="text-xs sm:text-sm">{setting.announcementText}</p>
-        <Link
+        <TransitionLink
           href="/services"
+          transitionLabel="Services"
           className="hidden h-9 items-center rounded-full bg-white/10 px-3 text-xs font-semibold text-text-inverse ring-1 ring-white/15 transition-transform active:scale-95 sm:inline-flex"
         >
           Explore
-        </Link>
+        </TransitionLink>
       </div>
     </div>
   );

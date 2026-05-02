@@ -1,9 +1,9 @@
 "use client";
 
 import { motion } from "framer-motion";
-import Link from "next/link";
 import { type ReactNode } from "react";
 
+import { TransitionLink } from "@/components/route-transition";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/components/ui/utils";
 
@@ -46,11 +46,11 @@ export function ServiceCardUi({
               <span className="text-caption text-brand-primary">{categoryName}</span>
             </div>
 
-            <Link href={`/service/${id}`} className="block">
+            <TransitionLink href={`/service/${id}`} transitionLabel={name} className="block">
               <h3 className="text-body-sm font-semibold text-text-primary transition-colors group-hover:text-brand-primary">
                 {name}
               </h3>
-            </Link>
+            </TransitionLink>
 
             <p className="mt-1.5 line-clamp-2 text-body-sm text-text-secondary">
               {description}

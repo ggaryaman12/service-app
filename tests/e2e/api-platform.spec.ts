@@ -164,8 +164,8 @@ test("open booking APIs reject invalid channel API keys", async ({ request }) =>
 const unauthenticatedFirstPartyRoutes: ApiRoute[] = [
   { method: "get", path: "/api/app/customer/account" },
   { method: "get", path: "/api/app/customer/bookings" },
-  { method: "get", path: "/api/app/admin/catalog" },
-  { method: "get", path: "/api/app/manager/bookings" },
+  { method: "get", path: "/api/app/roles" },
+  { method: "get", path: "/api/app/bookings" },
   { method: "get", path: "/api/app/worker/jobs" }
 ];
 
@@ -200,8 +200,8 @@ test("first-party app APIs reject authenticated users with the wrong role", asyn
       customer
     );
     try {
-      await expectForbidden(customerSession.page, "/api/app/admin/catalog");
-      await expectForbidden(customerSession.page, "/api/app/manager/bookings");
+      await expectForbidden(customerSession.page, "/api/app/roles");
+      await expectForbidden(customerSession.page, "/api/app/bookings");
     } finally {
       await customerSession.close();
     }
@@ -219,6 +219,221 @@ test("first-party app APIs reject authenticated users with the wrong role", asyn
     }
   } finally {
     await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } });
+  }
+});
+
+test("manager booking APIs stay scoped to the manager region", async ({
+  browser,
+  baseURL
+}) => {
+  skipMissingMigration(
+    await columnExists("Booking", "integrationChannelId"),
+    "Integration channel booking column has not been applied"
+  );
+
+  const suffix = Date.now();
+  const password = `Password-${suffix}!`;
+  const managerRegion = `Manager Zone ${suffix}`;
+  const otherRegion = `Other Zone ${suffix}`;
+  let categoryId: string | null = null;
+  let serviceId: string | null = null;
+  const userIds: string[] = [];
+  const bookingIds: string[] = [];
+  const workerProfileIds: string[] = [];
+  let accessRoleId: string | null = null;
+
+  try {
+    const accessRole = await prisma.managerAccessRole.create({
+      data: {
+        name: `Scoped Manager Role ${suffix}`,
+        description: "Manager API region scope e2e role",
+        permissions: [
+          "bookings.view",
+          "bookings.statusOverride",
+          "dispatch.view",
+          "dispatch.assign"
+        ]
+      }
+    });
+    accessRoleId = accessRole.id;
+
+    const [manager, scopedCustomer, outsideCustomer, scopedWorker, outsideWorker] = await Promise.all([
+      prisma.user.create({
+        data: {
+          name: "Scoped Manager",
+          email: `scoped-manager-${suffix}@example.com`,
+          passwordHash: hashPassword(password),
+          role: "MANAGER",
+          region: managerRegion,
+          managerAccessRoleId: accessRole.id
+        }
+      }),
+      prisma.user.create({
+        data: {
+          name: "Scoped Customer",
+          email: `scoped-customer-${suffix}@example.com`,
+          passwordHash: "locked:test",
+          role: "CUSTOMER",
+          region: managerRegion
+        }
+      }),
+      prisma.user.create({
+        data: {
+          name: "Outside Customer",
+          email: `outside-customer-${suffix}@example.com`,
+          passwordHash: "locked:test",
+          role: "CUSTOMER",
+          region: otherRegion
+        }
+      }),
+      prisma.user.create({
+        data: {
+          name: "Scoped Worker",
+          email: `scoped-worker-${suffix}@example.com`,
+          passwordHash: hashPassword(password),
+          role: "WORKER",
+          region: managerRegion
+        }
+      }),
+      prisma.user.create({
+        data: {
+          name: "Outside Worker",
+          email: `outside-worker-${suffix}@example.com`,
+          passwordHash: hashPassword(password),
+          role: "WORKER",
+          region: otherRegion
+        }
+      })
+    ]);
+    userIds.push(manager.id, scopedCustomer.id, outsideCustomer.id, scopedWorker.id, outsideWorker.id);
+
+    await Promise.all([
+      prisma.workerProfile.create({
+        data: {
+          userId: scopedWorker.id,
+          isOnline: true,
+          skills: []
+        }
+      }),
+      prisma.workerProfile.create({
+        data: {
+          userId: outsideWorker.id,
+          isOnline: true,
+          skills: []
+        }
+      })
+    ]);
+    workerProfileIds.push(scopedWorker.id, outsideWorker.id);
+
+    const category = await prisma.category.create({
+      data: {
+        name: `Scoped Category ${suffix}`,
+        slug: `scoped-category-${suffix}`,
+        active: true
+      }
+    });
+    categoryId = category.id;
+
+    const service = await prisma.service.create({
+      data: {
+        categoryId: category.id,
+        name: `Scoped Service ${suffix}`,
+        description: "Created by manager scope e2e test",
+        basePrice: 499,
+        estimatedMinutes: 30
+      }
+    });
+    serviceId = service.id;
+
+    const [scopedBooking, outsideBooking] = await Promise.all([
+      prisma.booking.create({
+        data: {
+          customerId: scopedCustomer.id,
+          serviceId: service.id,
+          status: "PENDING",
+          scheduledDate: new Date("2026-05-02T00:00:00.000Z"),
+          scheduledTimeSlot: "09:00 - 11:00",
+          address: "Scoped booking address",
+          totalAmount: 499
+        }
+      }),
+      prisma.booking.create({
+        data: {
+          customerId: outsideCustomer.id,
+          serviceId: service.id,
+          status: "PENDING",
+          scheduledDate: new Date("2026-05-02T00:00:00.000Z"),
+          scheduledTimeSlot: "11:00 - 13:00",
+          address: "Outside booking address",
+          totalAmount: 499
+        }
+      })
+    ]);
+    bookingIds.push(scopedBooking.id, outsideBooking.id);
+
+    const managerSession = await loginWithPage(browser, baseURL, manager);
+    try {
+      const response = await managerSession.page.request.get(
+        `/api/app/bookings?region=${encodeURIComponent(otherRegion)}`
+      );
+      expect(response.status()).toBe(200);
+      const body = await response.json();
+      const returnedIds = body.data.map((booking: { id: string }) => booking.id);
+      expect(returnedIds).toContain(scopedBooking.id);
+      expect(returnedIds).not.toContain(outsideBooking.id);
+      expect(
+        body.data.every((booking: { customer: { email?: string } }) => !booking.customer.email)
+      ).toBe(true);
+
+      const dispatchResponse = await managerSession.page.request.get(
+        `/api/app/dispatch?region=${encodeURIComponent(otherRegion)}`
+      );
+      expect(dispatchResponse.status()).toBe(200);
+      const dispatchBody = await dispatchResponse.json();
+      const workerIds = dispatchBody.data.availableWorkers.map(
+        (worker: { userId: string; user?: Record<string, unknown> }) => worker.userId
+      );
+      expect(workerIds).toContain(scopedWorker.id);
+      expect(workerIds).not.toContain(outsideWorker.id);
+      expect(
+        dispatchBody.data.availableWorkers.every(
+          (worker: { user?: Record<string, unknown> }) =>
+            JSON.stringify(Object.keys(worker.user ?? {}).sort()) ===
+            JSON.stringify(["id", "name", "region"])
+        )
+      ).toBe(true);
+
+      const forbiddenResponse = await managerSession.page.request.patch(
+        "/api/app/bookings",
+        {
+          data: {
+            bookingId: outsideBooking.id,
+            status: "CONFIRMED"
+          }
+        }
+      );
+      await expectJsonError(forbiddenResponse, 403, "FORBIDDEN", "Forbidden");
+
+      const outsideWorkerResponse = await managerSession.page.request.post(
+        "/api/app/dispatch",
+        {
+          data: {
+            bookingId: scopedBooking.id,
+            workerId: outsideWorker.id
+          }
+        }
+      );
+      await expectJsonError(outsideWorkerResponse, 403, "FORBIDDEN", "Forbidden");
+    } finally {
+      await managerSession.close();
+    }
+  } finally {
+    await prisma.booking.deleteMany({ where: { id: { in: bookingIds } } });
+    await prisma.workerProfile.deleteMany({ where: { userId: { in: workerProfileIds } } });
+    if (serviceId) await prisma.service.deleteMany({ where: { id: serviceId } });
+    if (categoryId) await prisma.category.deleteMany({ where: { id: categoryId } });
+    await prisma.user.deleteMany({ where: { id: { in: userIds } } });
+    if (accessRoleId) await prisma.managerAccessRole.deleteMany({ where: { id: accessRoleId } });
   }
 });
 

@@ -1,6 +1,6 @@
 import { deleteCategory, updateCategory } from "@/features/admin/admin.service";
-import { requireAdmin } from "@/features/auth/session.service";
 import { jsonError, jsonOk, readJson } from "@/app/api/_lib/respond";
+import { requireFeaturePermission } from "@/features/operations/permission-guard.service";
 
 export const dynamic = "force-dynamic";
 
@@ -9,7 +9,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await requireAdmin();
+    await requireFeaturePermission("catalog.edit");
     const { id } = await params;
     const body = await readJson<Record<string, unknown>>(request);
     return jsonOk(
@@ -31,7 +31,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await requireAdmin();
+    await requireFeaturePermission("catalog.edit");
     const { id } = await params;
     return jsonOk(await deleteCategory(id));
   } catch (error) {

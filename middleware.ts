@@ -17,17 +17,36 @@ function redirectHome(req: Request) {
   return NextResponse.redirect(new URL("/", req.url));
 }
 
+const staffFeaturePrefixes = [
+  "/dashboard",
+  "/bookings",
+  "/dispatch",
+  "/catalog",
+  "/marketing",
+  "/integration-channels",
+  "/roles",
+  "/managers"
+];
+
+function matchesRoute(pathname: string, prefix: string) {
+  return pathname === prefix || pathname.startsWith(`${prefix}/`);
+}
+
+function isStaffFeatureRoute(pathname: string) {
+  return staffFeaturePrefixes.some((prefix) => matchesRoute(pathname, prefix));
+}
+
 export default auth((req) => {
   const pathname = req.nextUrl.pathname;
   const userRole = req.auth?.user?.role;
+  const isStaffRoute = isStaffFeatureRoute(pathname);
 
   if (!req.auth) {
     if (pathname === "/staff/login" || pathname === "/staff/setup") {
       return NextResponse.next();
     }
     if (
-      pathname.startsWith("/admin") ||
-      pathname.startsWith("/manager") ||
+      isStaffRoute ||
       pathname.startsWith("/worker") ||
       pathname.startsWith("/staff")
     ) {
@@ -36,12 +55,14 @@ export default auth((req) => {
     return redirectToCustomerLogin(req);
   }
 
-  if (pathname.startsWith("/admin")) {
-    if (userRole !== "ADMIN") return redirectHome(req);
-  }
-
-  if (pathname.startsWith("/manager")) {
+  if (isStaffRoute) {
     if (userRole !== "MANAGER" && userRole !== "ADMIN") return redirectHome(req);
+    if (
+      (matchesRoute(pathname, "/roles") || matchesRoute(pathname, "/managers")) &&
+      userRole !== "ADMIN"
+    ) {
+      return redirectHome(req);
+    }
   }
 
   if (pathname.startsWith("/worker")) {
@@ -52,5 +73,16 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ["/admin/:path*", "/manager/:path*", "/worker/:path*", "/staff/:path*"]
+  matcher: [
+    "/dashboard/:path*",
+    "/bookings/:path*",
+    "/dispatch/:path*",
+    "/catalog/:path*",
+    "/marketing/:path*",
+    "/integration-channels/:path*",
+    "/roles/:path*",
+    "/managers/:path*",
+    "/worker/:path*",
+    "/staff/:path*"
+  ]
 };

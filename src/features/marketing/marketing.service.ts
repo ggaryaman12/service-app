@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { columnExists } from "@/lib/db-meta";
 import { assertNonEmpty } from "@/features/shared/errors";
 
 function parseBoolean(value: unknown) {
@@ -85,12 +86,14 @@ export async function createBanner(input: {
   active?: unknown;
   sortOrder?: unknown;
 }) {
+  const hasBannerImage = await columnExists("Banner", "imageUrl");
+
   return prisma.banner.create({
     data: {
       title: assertNonEmpty(input.title, "Title"),
       subtitle: String(input.subtitle ?? "").trim() || null,
       tone: String(input.tone ?? "blue").trim() || "blue",
-      imageUrl: String(input.imageUrl ?? "").trim() || null,
+      ...(hasBannerImage ? { imageUrl: String(input.imageUrl ?? "").trim() || null } : {}),
       href: String(input.href ?? "").trim() || null,
       active: parseBoolean(input.active),
       sortOrder: Number(String(input.sortOrder ?? "0")) || 0
@@ -108,13 +111,15 @@ export async function updateBanner(input: {
   active?: unknown;
   sortOrder?: unknown;
 }) {
+  const hasBannerImage = await columnExists("Banner", "imageUrl");
+
   return prisma.banner.update({
     where: { id: assertNonEmpty(input.id, "ID") },
     data: {
       title: assertNonEmpty(input.title, "Title"),
       subtitle: String(input.subtitle ?? "").trim() || null,
       tone: String(input.tone ?? "blue").trim() || "blue",
-      imageUrl: String(input.imageUrl ?? "").trim() || null,
+      ...(hasBannerImage ? { imageUrl: String(input.imageUrl ?? "").trim() || null } : {}),
       href: String(input.href ?? "").trim() || null,
       active: parseBoolean(input.active),
       sortOrder: Number(String(input.sortOrder ?? "0")) || 0

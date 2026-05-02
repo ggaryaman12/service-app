@@ -1,9 +1,9 @@
 "use client";
 
 import { motion } from "framer-motion";
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useCart } from "@/components/cart/use-cart";
+import { TransitionLink } from "@/components/route-transition";
 
 type PriceMap = Record<string, number>;
 
@@ -34,12 +34,13 @@ export function CartBar({ prices }: { prices: PriceMap }) {
           <p className="text-caption text-text-muted">{count} item{count === 1 ? "" : "s"}</p>
           <p className="text-lg font-semibold text-text-primary">₹{total}</p>
         </div>
-        <Link
+        <TransitionLink
           href="/checkout"
+          transitionLabel="Checkout"
           className="inline-flex h-11 flex-1 items-center justify-center rounded-full bg-brand-primary px-4 text-label text-text-inverse shadow-button-primary transition-colors hover:bg-brand-primary-hover active:scale-95"
         >
           Proceed to checkout
-        </Link>
+        </TransitionLink>
       </div>
     </motion.div>
   );

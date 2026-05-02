@@ -2,7 +2,13 @@ import { randomBytes } from "node:crypto";
 import { BookingStatus, type Prisma, Role } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
+import { columnExists } from "@/lib/db-meta";
 import { AppError, assertNonEmpty } from "@/features/shared/errors";
+import {
+  bookingDetailSelect,
+  dispatchBookingSelect,
+  managerBookingSelect
+} from "@/features/bookings/booking.selects";
 
 const WORKER_FORWARD_TRANSITIONS: Partial<Record<BookingStatus, BookingStatus>> = {
   CONFIRMED: "EN_ROUTE",
@@ -18,6 +24,39 @@ const MANAGER_STATUSES = new Set<BookingStatus>([
   "COMPLETED",
   "CANCELLED"
 ]);
+
+const bookingMutationSelect = {
+  id: true,
+  status: true,
+  scheduledDate: true,
+  scheduledTimeSlot: true,
+  address: true,
+  totalAmount: true,
+  notes: true,
+  customerId: true,
+  serviceId: true,
+  workerId: true,
+  managerId: true
+} satisfies Prisma.BookingSelect;
+
+const customerBookingSelect = {
+  id: true,
+  status: true,
+  scheduledDate: true,
+  scheduledTimeSlot: true,
+  totalAmount: true,
+  service: { select: { name: true, category: { select: { name: true } } } },
+  worker: { select: { name: true, phone: true } }
+} satisfies Prisma.BookingSelect;
+
+const workerJobSelect = {
+  id: true,
+  status: true,
+  scheduledTimeSlot: true,
+  address: true,
+  customer: { select: { name: true } },
+  service: { select: { name: true, category: { select: { name: true } } } }
+} satisfies Prisma.BookingSelect;
 
 export type BookingCreateInput = {
   customerId: string;
@@ -160,6 +199,15 @@ export async function createBooking(input: BookingCreateInput) {
   const scheduledTimeSlot = assertNonEmpty(input.scheduledTimeSlot, "Time slot");
   const region = input.region ? String(input.region).trim() || null : null;
   const notes = input.notes ? String(input.notes).trim() || null : null;
+  const hasIntegrationChannelId = await columnExists("Booking", "integrationChannelId");
+
+  if (input.integrationChannelId && !hasIntegrationChannelId) {
+    throw new AppError(
+      "MIGRATION_REQUIRED",
+      "Booking integration channel column is not available",
+      500
+    );
+  }
 
   return prisma.$transaction(async (tx) => {
     const customer = await tx.user.findUnique({
@@ -187,14 +235,17 @@ export async function createBooking(input: BookingCreateInput) {
       data: {
         customerId,
         serviceId,
-        integrationChannelId: input.integrationChannelId ?? null,
+        ...(hasIntegrationChannelId
+          ? { integrationChannelId: input.integrationChannelId ?? null }
+          : {}),
         status: "PENDING",
         scheduledDate,
         scheduledTimeSlot,
         address,
         totalAmount: service.basePrice,
         notes
-      }
+      },
+      select: bookingMutationSelect
     });
   });
 }
@@ -260,7 +311,8 @@ export async function createCartBookings(input: CartBookingCreateInput) {
               address,
               totalAmount: basePrice,
               notes
-            }
+            },
+            select: bookingMutationSelect
           })
         );
       }
@@ -278,16 +330,30 @@ export async function assignWorkerToBooking(input: {
   bookingId: string;
   workerId: string;
   managerId?: string | null;
+  allowedRegion?: string | null;
 }) {
   const bookingId = assertNonEmpty(input.bookingId, "Booking ID");
   const workerId = assertNonEmpty(input.workerId, "Worker");
 
   const worker = await prisma.user.findUnique({
     where: { id: workerId },
-    select: { id: true, role: true }
+    select: { id: true, role: true, region: true }
   });
   if (!worker || worker.role !== Role.WORKER) {
     throw new AppError("WORKER_NOT_FOUND", "Worker not found", 404);
+  }
+  if (input.allowedRegion && worker.region !== input.allowedRegion) {
+    throw new AppError("FORBIDDEN", "Forbidden", 403);
+  }
+
+  if (input.allowedRegion) {
+    const booking = await prisma.booking.findUnique({
+      where: { id: bookingId },
+      select: { customer: { select: { region: true } } }
+    });
+    if (!booking || booking.customer.region !== input.allowedRegion) {
+      throw new AppError("FORBIDDEN", "Forbidden", 403);
+    }
   }
 
   return prisma.booking.update({
@@ -296,7 +362,8 @@ export async function assignWorkerToBooking(input: {
       workerId,
       managerId: input.managerId ?? undefined,
       status: "CONFIRMED"
-    }
+    },
+    select: bookingMutationSelect
   });
 }
 
@@ -304,16 +371,28 @@ export async function updateBookingStatusAsManager(input: {
   bookingId: string;
   status: string;
   managerId?: string | null;
+  allowedRegion?: string | null;
 }) {
   const bookingId = assertNonEmpty(input.bookingId, "Booking ID");
   const status = parseStatus(input.status);
+
+  if (input.allowedRegion) {
+    const booking = await prisma.booking.findUnique({
+      where: { id: bookingId },
+      select: { customer: { select: { region: true } } }
+    });
+    if (!booking || booking.customer.region !== input.allowedRegion) {
+      throw new AppError("FORBIDDEN", "Forbidden", 403);
+    }
+  }
 
   return prisma.booking.update({
     where: { id: bookingId },
     data: {
       status,
       managerId: input.managerId ?? undefined
-    }
+    },
+    select: bookingMutationSelect
   });
 }
 
@@ -345,7 +424,8 @@ export async function updateAssignedWorkerJobStatus(input: {
 
   return prisma.booking.update({
     where: { id: bookingId },
-    data: { status }
+    data: { status },
+    select: bookingMutationSelect
   });
 }
 
@@ -370,7 +450,7 @@ export async function toggleWorkerDuty(userId: string) {
 export async function getCustomerBookings(customerId: string) {
   return prisma.booking.findMany({
     where: { customerId },
-    include: { service: { include: { category: true } }, worker: true },
+    select: customerBookingSelect,
     orderBy: [{ scheduledDate: "desc" }],
     take: 50
   });
@@ -379,6 +459,15 @@ export async function getCustomerBookings(customerId: string) {
 export async function getOpenBookingStatus(bookingId: string, integrationChannelId: string) {
   const id = assertNonEmpty(bookingId, "Booking ID");
   const channelId = assertNonEmpty(integrationChannelId, "Integration channel");
+  const hasIntegrationChannelId = await columnExists("Booking", "integrationChannelId");
+  if (!hasIntegrationChannelId) {
+    throw new AppError(
+      "MIGRATION_REQUIRED",
+      "Booking integration channel column is not available",
+      500
+    );
+  }
+
   const booking = await prisma.booking.findFirst({
     where: { id, integrationChannelId: channelId },
     select: {
@@ -406,9 +495,18 @@ export async function getOpenBookingStatus(bookingId: string, integrationChannel
 export async function getManagerBookings(region?: string | null) {
   return prisma.booking.findMany({
     where: region ? { customer: { region } } : undefined,
-    include: { customer: true, worker: true, service: { include: { category: true } } },
+    select: managerBookingSelect,
     orderBy: [{ scheduledDate: "desc" }],
     take: 50
+  });
+}
+
+export async function getManagerBooking(bookingId: string) {
+  const id = assertNonEmpty(bookingId, "Booking ID");
+
+  return prisma.booking.findUnique({
+    where: { id },
+    select: bookingDetailSelect
   });
 }
 
@@ -419,7 +517,7 @@ export async function getDispatchSnapshot(region?: string | null) {
         status: "PENDING",
         ...(region ? { customer: { region } } : {})
       },
-      include: { customer: true, service: { include: { category: true } } },
+      select: dispatchBookingSelect,
       orderBy: [{ scheduledDate: "asc" }],
       take: 25
     }),
@@ -428,10 +526,30 @@ export async function getDispatchSnapshot(region?: string | null) {
         isOnline: true,
         user: { role: "WORKER", ...(region ? { region } : {}) }
       },
-      include: { user: true },
+      select: {
+        userId: true,
+        isOnline: true,
+        skills: true,
+        rating: true,
+        totalJobs: true,
+        currentLocation: true,
+        user: { select: { id: true, name: true, region: true } }
+      },
       orderBy: [{ user: { name: "asc" } }]
     })
   ]);
+}
+
+type OperationalBookingsArgs = {
+  region?: string | null;
+};
+
+export async function getOperationalBookings(args: OperationalBookingsArgs = {}) {
+  return getManagerBookings(args.region);
+}
+
+export async function getOperationalDispatchSnapshot(args: OperationalBookingsArgs = {}) {
+  return getDispatchSnapshot(args.region);
 }
 
 export async function getWorkerJobs(userId: string) {
@@ -446,7 +564,7 @@ export async function getWorkerJobs(userId: string) {
       scheduledDate: { gte: todayStart, lt: tomorrowStart },
       status: { in: ["CONFIRMED", "EN_ROUTE", "IN_PROGRESS"] }
     },
-    include: { customer: true, service: { include: { category: true } } },
+    select: workerJobSelect,
     orderBy: [{ scheduledDate: "asc" }]
   });
 }

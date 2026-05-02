@@ -47,8 +47,8 @@ This command upserts the following users and resets their password to `Demo@1234
 | Role | Email | Password | Login URL | How to create |
 |---|---|---|---|---|
 | Admin | `admin@jammuserve.test` | `Demo@1234` | `/staff/login` | Created by `npm run seed:demo`, or manually through `/staff/setup` before any admin exists. |
-| Manager | `manager@jammuserve.test` | `Demo@1234` | `/staff/login` | Created by `npm run seed:demo`, or manually from `/admin/users`. |
-| Worker | `worker@jammuserve.test` | `Demo@1234` | `/staff/login` | Created by `npm run seed:demo`, or manually from `/admin/users`. |
+| Manager | `manager@jammuserve.test` | `Demo@1234` | `/staff/login` | Created by `npm run seed:demo`, or manually from `/managers`. |
+| Worker | `worker@jammuserve.test` | `Demo@1234` | `/staff/login` | Created by `npm run seed:demo`. |
 | Customer | `customer@jammuserve.test` | `Demo@1234` | `/customer/login` | Created by `npm run seed:demo`, or manually from `/customer/register`. |
 
 Important auth rule: customers must use customer login. Admin, manager, and worker accounts must use staff login.
@@ -65,12 +65,11 @@ Important auth rule: customers must use customer login. Admin, manager, and work
 | Customer account | Customer profile summary, booking status timeline, worker call/WhatsApp links | `/account` |
 | Customer auth | Customer login and self-registration | `/customer/login`, `/customer/register` |
 | Staff auth | Staff login and first-admin setup | `/staff/login`, `/staff/setup` |
-| Admin | Category CRUD, service CRUD, staff creation, marketing settings, banners | `/admin/*` |
-| Manager | Booking list, booking detail, dispatch worker assignment, status updates | `/manager/*` |
+| Staff dashboard | Shared admin/manager overview, booking operations, catalog, marketing, integration channels, manager roles | `/dashboard`, `/bookings`, `/dispatch`, `/catalog/*`, `/marketing`, `/integration-channels`, `/roles`, `/managers` |
 | Worker | Duty toggle, active jobs, assigned job status updates | `/worker/*` |
 | Open API | Public catalog plus authorized booking/status APIs for third-party clients, AI chatbots, or WhatsApp integrations | `/api/open/*` |
 | First-party API | Session-authenticated REST APIs for JammuServe-owned web/mobile clients | `/api/app/*` |
-| Upload signing | Admin-only Cloudinary upload signature generation | `/api/cloudinary/sign` |
+| Upload signing | Permission-gated Cloudinary upload signature generation | `/api/cloudinary/sign` |
 
 ## Page Routes
 
@@ -102,29 +101,22 @@ Important auth rule: customers must use customer login. Admin, manager, and work
 | `/staff/setup` | Public only until first admin exists | One-time first-admin bootstrap. Redirects to `/staff/login` after an admin exists. |
 | `/setup` | Public | Legacy redirect to `/staff/setup`. |
 
-### Admin Routes
+### Staff Feature Routes
 
-Admin routes require an authenticated `ADMIN` user.
+Staff feature routes require an authenticated `ADMIN` or `MANAGER`. Admins always get all feature permissions. Managers must have one active manager access role with the matching permission.
 
-| Route | Purpose |
-|---|---|
-| `/admin` | Admin overview with total bookings and active worker count. |
-| `/admin/categories` | Create, update, delete categories. Fields include name, slug, image, active status. |
-| `/admin/services` | Create, update, delete services. Fields include category, name, description, image, base price, estimated minutes. |
-| `/admin/users` | Create manager/worker staff users and update user roles. Worker creation also creates a `WorkerProfile`. |
-| `/admin/marketing` | Manage announcement, landing hero media/text/CTA, banner auto-scroll, and offer/banner records. |
-| `/admin/integration-channels` | Manage DB-backed integration channels, API key rotation, active status, and allowed scopes. |
-
-### Manager Routes
-
-Manager routes require `MANAGER` or `ADMIN`.
-
-| Route | Purpose |
-|---|---|
-| `/manager` | Manager home with links to booking operations. |
-| `/manager/bookings` | Booking list and status update controls. |
-| `/manager/bookings/[id]` | Booking detail and worker dispatch assignment. |
-| `/manager/dispatch` | Dispatch board for assigning available workers to pending bookings. Assignment moves the booking to `CONFIRMED`. |
+| Route | Permission | Purpose |
+|---|---|---|
+| `/dashboard` | Any staff feature access, or admin | Shared role-aware overview with KPIs and live queue. |
+| `/bookings` | `bookings.view` | Booking list and status controls scoped by manager region unless `bookings.allRegions` is granted. |
+| `/bookings/[id]` | `bookings.view` | Booking detail and worker dispatch assignment when assignment permission is available. |
+| `/dispatch` | `dispatch.view` | Dispatch board for assigning available workers to pending bookings. Assignment requires `dispatch.assign`. |
+| `/catalog/categories` | `catalog.view` | Category workspace. Mutations require `catalog.edit`. |
+| `/catalog/services` | `catalog.view` | Service catalog workspace. Mutations require `catalog.edit`. |
+| `/marketing` | `marketing.manage` | Announcement, landing hero media/text/CTA, banner auto-scroll, and offer/banner records. |
+| `/integration-channels` | `integrations.manage` | DB-backed integration channels, API key rotation, active status, and allowed scopes. |
+| `/roles` | Admin only | Create, edit, and deactivate manager access roles. |
+| `/managers` | Admin only | Create managers, set region, and assign one access role. |
 
 ### Worker Routes
 
@@ -151,7 +143,7 @@ Typical flow:
 2. Customer opens `/services`.
 3. Customer books one service through `/book/[serviceId]` or adds multiple services to cart and uses `/checkout`.
 4. Booking is created as `PENDING`.
-5. Manager assigns a worker from `/manager/dispatch` or booking detail.
+5. Manager assigns a worker from `/dispatch` or booking detail, if their access role allows dispatch assignment.
 6. Booking becomes `CONFIRMED`.
 7. Worker toggles duty online from `/worker`.
 8. Worker updates assigned job through `/worker/job/[id]`.
@@ -336,19 +328,21 @@ First-party app APIs use the same Auth.js cookie/session authentication as the w
 | `GET /api/app/customer/bookings` | `CUSTOMER` | Customer booking list. |
 | `POST /api/app/customer/bookings` | `CUSTOMER` | Single-service booking creation. |
 | `POST /api/app/checkout` | `CUSTOMER` | Cart checkout; creates one booking per item quantity. |
-| `GET /api/app/manager/bookings` | `MANAGER`, `ADMIN` | Latest bookings, optional `region` filter. |
-| `PATCH /api/app/manager/bookings` | `MANAGER`, `ADMIN` | Manager booking status update. |
-| `GET /api/app/manager/dispatch` | `MANAGER`, `ADMIN` | Pending bookings plus online workers. |
-| `POST /api/app/manager/dispatch` | `MANAGER`, `ADMIN` | Assign worker and move booking to `CONFIRMED`. |
+| `GET /api/app/bookings` | `ADMIN`, `MANAGER` with `bookings.view` | Latest bookings, optional `region` filter. Managers stay region-scoped unless `bookings.allRegions` is granted. |
+| `GET /api/app/bookings/[id]` | `ADMIN`, `MANAGER` with `bookings.view` | Booking detail with restricted fields based on permissions. |
+| `PATCH /api/app/bookings` | `ADMIN`, `MANAGER` with `bookings.statusOverride` | Booking status update. |
+| `GET /api/app/dispatch` | `ADMIN`, `MANAGER` with `dispatch.view` | Pending bookings plus online workers. |
+| `POST /api/app/dispatch` | `ADMIN`, `MANAGER` with `dispatch.assign` | Assign worker and move booking to `CONFIRMED`. |
 | `GET /api/app/worker/jobs` | `WORKER`, `ADMIN` | Worker active jobs for today. |
 | `PATCH /api/app/worker/jobs` | `WORKER`, `ADMIN` | Assigned worker forward status transition. |
 | `POST /api/app/worker/duty` | `WORKER`, `ADMIN` | Toggle duty online/offline. |
-| `GET /api/app/admin/catalog` | `ADMIN` | Admin categories and services snapshot. |
-| `/api/app/admin/categories*` | `ADMIN` | Category create/update/delete. |
-| `/api/app/admin/services*` | `ADMIN` | Service create/update/delete. |
-| `/api/app/admin/users*` | `ADMIN` | Staff creation and role updates. |
-| `/api/app/admin/marketing/*` | `ADMIN` | Announcement, hero, banner auto-scroll, and banner CRUD. |
-| `/api/app/admin/integration-channels*` | `ADMIN` | List/create channels, rotate keys, activate/deactivate channels. |
+| `GET /api/app/admin/catalog` | `ADMIN`, `MANAGER` with `catalog.view` | Categories and services snapshot. |
+| `/api/app/admin/categories*` | `ADMIN`, `MANAGER` with `catalog.edit` | Category create/update/delete. |
+| `/api/app/admin/services*` | `ADMIN`, `MANAGER` with `catalog.edit` | Service create/update/delete. |
+| `/api/app/admin/marketing/*` | `ADMIN`, `MANAGER` with `marketing.manage` | Announcement, hero, banner auto-scroll, and banner CRUD. |
+| `/api/app/admin/integration-channels*` | `ADMIN`, `MANAGER` with `integrations.manage` | List/create channels, rotate keys, activate/deactivate channels. |
+| `/api/app/roles*` | `ADMIN` | Create/edit/deactivate manager access roles. |
+| `/api/app/managers*` | `ADMIN` | Create managers and update assigned access role/region/contact fields. |
 
 API contract details are also documented in:
 
@@ -413,11 +407,12 @@ These are not public REST APIs, but they power form submissions in the UI.
 
 | File | Actions | Purpose |
 |---|---|---|
-| `src/app/admin/actions.ts` | `createCategory`, `updateCategory`, `deleteCategory`, `createService`, `updateService`, `deleteService`, `createStaffUser`, `updateUserRole` | Admin catalog and staff management. |
-| `src/app/admin/marketing/server-actions.ts` | `updateAnnouncement`, `updateLandingHero`, `updateBannerAutoScroll`, `createBanner`, `updateBanner`, `deleteBanner` | Landing/marketing content management. |
+| `src/app/(admin)/admin/actions.ts` | `createCategory`, `updateCategory`, `deleteCategory`, `createService`, `updateService`, `deleteService` | Catalog management, guarded by feature permissions. |
+| `src/app/(admin)/admin/marketing/server-actions.ts` | `updateAnnouncement`, `updateLandingHero`, `updateBannerAutoScroll`, `createBanner`, `updateBanner`, `deleteBanner` | Landing/marketing content management, guarded by `marketing.manage`. |
+| `src/app/(staff)/actions.ts` | `createAccessRole`, `updateAccessRole`, `createManagerAccount`, `updateManagerAccount` | Admin-only access role and manager account management. |
 | `src/app/book/actions.ts` | `createBooking` | Single-service booking creation. |
 | `src/app/checkout/actions.ts` | `createBookingsFromCart` | Multi-service cart checkout. |
-| `src/app/manager/actions.ts` | `assignWorker`, `updateBookingStatus` | Dispatch and booking status management. |
+| `src/app/(operations)/_actions/booking-actions.ts` | `assignWorker`, `updateBookingStatus` | Dispatch and booking status management, guarded by feature permissions. |
 | `src/app/worker/actions.ts` | `toggleDuty`, `updateJobStatus` | Worker availability and assigned job progression. |
 
 ## Data Model Summary
@@ -441,12 +436,12 @@ Prices are stored as integers and displayed as INR rupee amounts in the current 
 After creating the demo users, add catalog data:
 
 1. Log in as admin at `/staff/login`.
-2. Open `/admin/categories`.
+2. Open `/catalog/categories`.
 3. Create categories such as:
    - `AC Repair` with slug `ac-repair`
    - `Electrician` with slug `electrician`
    - `Salon` with slug `salon`
-4. Open `/admin/services`.
+4. Open `/catalog/services`.
 5. Create services under those categories with base prices and estimated minutes.
 6. Open `/services` to confirm the customer catalog is populated.
 
@@ -465,8 +460,8 @@ Suggested demo services:
 
 | Route group | Allowed roles |
 |---|---|
-| `/admin/*` | `ADMIN` |
-| `/manager/*` | `MANAGER`, `ADMIN` |
+| `/dashboard`, `/bookings/*`, `/dispatch`, `/catalog/*`, `/marketing`, `/integration-channels` | `ADMIN`, `MANAGER` with matching feature permission |
+| `/roles`, `/managers` | `ADMIN` |
 | `/worker/*` | `WORKER`, `ADMIN` |
 | `/staff/login` | Public |
 | `/staff/setup` | Public only for first-admin setup |
@@ -479,11 +474,11 @@ Suggested demo services:
 
 1. For predictable demo credentials, run `npm run seed:demo`.
 2. Log in at `/staff/login` with `admin@jammuserve.test` / `Demo@1234`.
-3. Create manager and worker demo users from `/admin/users`.
-4. Create categories and services from `/admin/categories` and `/admin/services`.
+3. Create manager access roles from `/roles` and managers from `/managers`.
+4. Create categories and services from `/catalog/categories` and `/catalog/services`.
 5. Log in at `/customer/login` with `customer@jammuserve.test` / `Demo@1234`, or register a new customer at `/customer/register`.
 6. Browse `/services`, add services to cart, or open a service detail and book directly.
 7. Customer confirms booking and sees it in `/account`.
-8. Manager logs in and assigns a worker from `/manager/dispatch`.
+8. Manager logs in and assigns a worker from `/dispatch`.
 9. Worker logs in, toggles duty, opens `/worker/job/[id]`, and updates status.
 10. Customer refreshes `/account` to see updated status.
